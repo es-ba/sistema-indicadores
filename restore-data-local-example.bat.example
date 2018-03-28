@@ -1,0 +1,5 @@
+SET PGCLIENTENCODING=utf8
+rem "C:/Program Files/PostgreSQL/9.5/bin/psql.exe" --host localhost --port 5435 --username "postgres" --dbname "sigba_db" -c "alter table sigba.variables add column tabla text;"
+"C:/Program Files/PostgreSQL/9.5/bin/pg_restore.exe" --host localhost --port 5435 --username "postgres" --dbname "sigba_db" --data-only --disable-triggers --single-transaction --exit-on-error --schema sigba --verbose "local-backup-con-data.backup"
+rem "C:/Program Files/PostgreSQL/9.5/bin/psql.exe" --host localhost --port 5435 --username "postgres" --dbname "sigba_db" -c "alter table sigba.variables drop column tabla;"
+rem "C:/Program Files/PostgreSQL/9.5/bin\pg_dump.exe" --host localhost --port 5435 --username "postgres" --no-password  --format plain --schema-only --no-owner --no-privileges --no-tablespaces --no-unlogged-table-data --file "local-backup-vuelto-a-bajar.backup" "sigba_db"

@@ -1,0 +1,11 @@
+if not "%PGPASSFILE%" == "" goto seted
+@SET PG_MAIN_PATH=C:\Program Files\PostgreSQL\9.5
+@SET PATH=%PG_MAIN_PATH%\bin;%PATH%
+@SET PGDATA=%PG_MAIN_PATH%\data
+@SET PGDATABASE=postgres
+@SET PGUSER=postgres
+@SET PGPORT=5435
+@SET PGLOCALEDIR=%PG_MAIN_PATH%\share\locale
+@SET PGPASSFILE=%APPDATA%\postgresql\pgpass.conf
+:seted
+psql -v ON_ERROR_STOP=on --quiet --single-transaction --file local-db-dump.sql sigba_db

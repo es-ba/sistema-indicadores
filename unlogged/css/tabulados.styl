@@ -1,0 +1,1199 @@
+body
+  font-family Arial
+  background-color #ffffff
+  margin 0
+  width 100%
+  height 100
+  margin 0px
+  padding 0px
+
+#total-layout
+  min-width 1024px
+  max-width 2000px
+    
+.tabla inicio
+  background-color #fff
+
+[esta-habilitado="si"] .a-cortante-posible
+  color #686868
+  font-weight bold
+  font-size 80%
+  text-decoration none
+  padding 15px
+  line-height 25px
+  &:before
+      content "\25b6" "\00a0" "\00a0" "\00a0"
+      
+[esta-habilitado="si"] .a-cortante-posible:hover
+  color #fff
+  
+[esta-habilitado="no"] .a-cortante-posible
+  color #bfbfbf
+  font-size 80%
+  font-weight bold
+  text-decoration none
+  line-height 20px
+  &:before
+    content "\25b6" "\00a0" "\00a0" "\00a0"
+  
+[esta-habilitado="no"] .a-cortante-posible:visited
+  color bfbfbf
+    
+[esta-habilitado="si"] .a-cortante-posible:visited
+  color #686868
+
+[esta-habilitado="si"] .a-cortante-posible:hover
+  color #FFF  
+  
+.annio-cortante-posible[menu-item-selected=true]
+  background-color #1d4263
+  color #ceeced
+
+[esta-habilitado="si"] .td-cortante-posible[menu-item-selected=true]
+  background-color #eba029
+  color #f5f5f5
+
+[esta-habilitado="no"] .td-cortante-posible[menu-item-selected=true]
+  background-color #6b8882
+  color #f5f5f5
+  
+[esta-habilitado="no"] .td-cortante-posible
+  background-color #929292
+  color #7f7f7f
+  border-bottom 1px solid #FFF
+  
+[esta-habilitado="no"] .td-cortante-posible:hover  
+  background-color #37BCB2
+  
+[esta-habilitado="si"] .td-cortante-posible
+  background-color #EEEEEE
+  border-bottom 1px solid #FFF
+  border-top 1px solid #FFF
+  
+[esta-habilitado="si"] .td-cortante-posible:hover  
+  background-color #37BCB2
+  color #ffff
+  
+.img-info-indicador
+  width 16px
+  padding 3px
+  margin-bottom -5px
+
+.img-info-indicador:hover  
+  cursor pointer
+  -webkit-transform scale(1)
+  transform scale(1)
+  -webkit-transition .2s ease-in-out
+  transition .3s ease-in-out
+
+.tabulado-descripcion
+  vertical-align middle
+  
+.tabulado-descripcion-annio
+  display inline-block
+  float left
+  margin-left 10px
+  margin-right 10px
+   
+.botones-tabulado-descripcion
+  display inline-block
+  margin-top 0px
+ 
+.boton_tabulados
+  width 28px
+  margin 0px
+  
+.boton_tabulados:hover
+  cursor pointer
+  -webkit-transform scale(1.2)
+  transform scale(1.2)
+  -webkit-transition .2s ease-in-out
+  transition .3s ease-in-out
+  
+.img-ley-agrupacion_principal
+  width 18px
+  padding 3px
+  margin-bottom -5px
+  
+.img-ley-agrupacion_principal:hover  
+  cursor pointer
+  -webkit-transform scale(1.2)
+  transform scale(1.2)
+  -webkit-transition .2s ease-in-out
+  transition .3s ease-in-out
+  
+.encabezado-interno
+  width 100%
+  left 0
+  
+#div-encabezado-titulo-tabulado
+  background-color #1a9698
+  background -webkit-linear-gradient(#1a9698, #3a668f)
+  background -o-linear-gradient(#1a9698, #3a668f)
+  background -moz-linear-gradient(#1a9698, #3a668f)
+  background linear-gradient(#1a9698, #3a668f)
+  color #FFF
+  font-size 100%
+  padding 4px
+  /* width: -webkit-fill-available */
+  font-weight bold
+  /* display inline-block */
+  z-index 1000
+  line-height 30px
+  border solid 1px #2f879d
+  
+#indicadores-titulo
+  float left
+  line-height 30px  
+  color #FFF
+  font-size 120%
+  margin-left 10px
+  z-index -1
+  
+.float-clear
+  float clear
+  height 32px
+  
+#titulo-signos_convencionales
+  line-height 30px  
+  color #FFF
+  font-size 95%
+  margin-right 40px
+  float right
+  text-decoration underline
+
+#valor-cv
+  display inline-block
+  min-width 100px
+  
+#valor-en-tabulado
+  display inline-block
+  
+#cv-en-tabulado
+  display inline-block
+  font-size 75%
+  vertical-align top
+  text-align left
+  margin-top -5px
+  width 10px
+  
+border-table()
+  border-left   0px solid #FFF
+  border-right  0px solid #FFF
+  margin 0px
+  border-spacing 0px
+
+table
+  font-family helvetica
+  border-table()
+  background #fff
+  
+.box-grafico-principal
+  min-width 600px
+  background-color #fff
+  vertical-align top
+
+.tabla-inicio th
+  background-color #385678
+  color #79a0bd
+  font-weight bolder
+    
+.head-inicio
+  line-height 20px
+  z-index 1000
+  color #79a0bd
+  background-color #385678
+  
+td
+  nowrap()
+
+tr td x
+  background-color #d0d2da
+  border-bottom   2px solid #666
+  border-top      2px solid #3F517F
+
+th
+  border-table()
+  
+thead th, #caption-signos_convencionales
+  font-size 80%
+  padding 5px
+  background-color #EEEEEE
+  white-space nowrap
+  color #1D4263
+  position sticky
+  top 0 /* required */
+  z-index 1100
+  
+.campo_denominacion
+  min-width 250px
+  padding 5px
+  padding-right 10px
+  border-bottom solid 1px #fff
+
+.td-principal-renglones
+  border-bottom solid 1px #fff
+  
+.campo_denominacion a:link
+  color #695e78
+
+.td-valores
+  background-color #eeeeee
+  text-align center
+  min-width 60px
+  padding 20px
+  font-weight bold
+  color #5d6c7c
+  border-bottom 1px solid #fafafa
+  border-top    0px solid #fafafa
+  border-left   1px solid #fafafa
+  border-right  0px solid #fafafa
+  
+#tabla-signos_convencionales
+  margin 10px
+
+#th-signo
+  border-right 1px solid #9cb6b4
+  
+.signos-convencionales-encabezado
+  border-bottom 1px solid #9cb6b4
+  
+.td-signos_convencionales 
+  font-family helvetica
+  color #53595f
+  font-size 82%
+  border-bottom 1px solid #d9dadd
+  border-top    0px solid #d9dadd
+  border-left   1px solid #d9dadd
+  border-right  1px solid #d9dadd
+  border-collapse collapse
+  
+.tabulator-table
+  border-right 1px solid #FFF
+  border-bottom 1px solid #FFF
+  border-top 1px solid #FFF 
+  border-collapse collapse
+
+.tabulator-table caption
+  background-color #1D4263
+  border-bottom 1px #FFF
+  color #FFF
+  padding 5px
+
+.variable
+  border-right 1px solid #FFF
+  border-bottom 1px solid #FFF
+  border-top 1px solid #FFF 
+  border-collapse collapse 
+
+.tabulator-cell
+  border-right 1px solid #FFF
+  border-bottom 1px solid #FFF
+  border-top 1px solid #FFF 
+  border-collapse collapse 
+  color #6e767a
+  font-size 90%
+  width 90px
+  text-align right
+
+.link-cortantes
+  font-weight bold
+  color #8467aa
+
+.link-cortantes:hover
+  color #1369a8
+
+.espacio-reserva
+  display none
+
+.tabulator-table
+  th
+    font-size 80%
+    min-width 90px
+    height 30px
+    white-space normal
+    border-right 1px solid #FFF
+    border-top 1px solid #FFF
+    padding 5px
+    background-color #eee
+    color #317391
+    max-height 60px
+    &.variable
+      max-width 200px
+  tbody
+    th
+      text-align left
+      max-width 180px
+      &.var_g_edad
+        text-align center
+      &.var_jer_ocup
+        min-width 200px
+      &.var_t_hog
+        min-width 120px
+      &.var_ringr_ctotcaba
+        min-width 240px
+      &.var_r_ten_viv
+        min-width 150px
+      &.var_t_cob_sal
+        min-width 200px
+  thead
+    th
+      max-width 120px
+      text-align center
+
+  .var_c_banio
+    max-width 130px
+  
+.annio-cortante-posible
+  color #FFF
+  padding 5px
+  text-decoration none
+
+#signos_convencionales-link:hover
+  color #fff
+  background-color #f1b940
+
+.annio-cortante-posible:hover
+  color #0f314a
+  background-color #18beb6
+
+.annio-cortante-posible:focus
+  color #403b3b
+  background-color #ffdda8
+
+.annio-cortante-posible:visited
+  color #FFF
+
+#info-ind-dim
+  margin-left 20px
+  margin-top 20px
+  margin-bottom 260px
+  border-bottom 1px solid #ceced1
+  border-top    1px solid #ceced1
+  border-left   1px solid #ceced1
+  border-right  1px solid #ceced1
+  border-spacing 0px
+  border-collapse collapse
+
+.ficha-label
+  color #fff
+  background-color #757d84
+  font-family helvetica
+  font-size 82%
+  font-weight bolder
+  border-bottom 1px solid #9fa0a1
+  border-top    1px solid #9fa0a1
+  border-left   1px solid #9fa0a1
+  border-right  1px solid #9fa0a1
+
+.ficha-value
+  background-color #fff
+  border-bottom 1px solid #9fa0a1
+  border-top    1px solid #9fa0a1
+  border-left   1px solid #9fa0a1
+  border-right  1px solid #9fa0a1
+
+.leyes
+  font-family helvetica
+  color #53595f
+  font-size 82%
+  background-color #fff
+  border-top 1px solid #9fa0a1
+  border-bottom 1px solid #9fa0a1
+  border-left   1px solid #9fa0a1
+  border-right  1px solid #9fa0a1
+  padding 10px
+  width 900px
+  margin -1px 0 0 -1px 
+  margin-left 10px
+
+  
+#info-ind-ficha-div
+  font-family helvetica
+  color #53595f
+  font-size 82%
+
+.tabla-var-princ-class
+  color #53595f
+  font-family helvetica
+  font-size 100%
+
+.tabla-var-princ-class
+  background-color #ffffff
+  margin-top 5px
+
+#denominacion-var-princ-id
+  margin-right 3px
+  font-weight bolder
+  color #3c4043
+
+h2
+  background-color #375677
+  color #FFF
+  font-size 80%
+  line-height 20px
+  padding 5px
+  border-bottom 2px solid #15BCAF 
+
+#annios-links
+  background-color #1a9698
+  background -webkit-linear-gradient(#1a9698, #3a668f)
+  background -o-linear-gradient(#1a9698, #3a668f)
+  background -moz-linear-gradient(#1a9698, #3a668f)
+  background linear-gradient(#1a9698, #3a668f)
+  color #FFF
+  font-size 100%
+  /* padding 4px */
+  /* width 100% */
+  font-weight bold
+  /* display inline-block */
+
+#annios-links .float-clear
+  height 40px
+  
+#barra-annios
+  background-color #1a9698
+  background -webkit-linear-gradient(#1a9698, #3a668f)
+  background -o-linear-gradient(#1a9698, #3a668f)
+  background -moz-linear-gradient(#1a9698, #3a668f)
+  background linear-gradient(#1a9698, #3a668f)
+  padding 4px
+  display inline-block
+  line-height 30px
+  float left
+
+#signos_convencionales-link
+  float right   
+  line-height 30px  
+  color #FFF
+  font-size 100%
+  margin-right 10px
+  margin-left 10px
+  z-index -1
+
+#link-signos-convencionales
+  display inline-block
+  padding 4px
+  float right
+
+#tabulado-descripcion-um 
+  font-size 80%
+  color #686868
+  margin-top 7px
+  
+#tabulado-descripcion-fuente, #tabulado-descripcion-nota
+  font-size 80%
+  color #686868
+  max-width 700px
+  
+#tabulado-fuente, #tabulado-um, #nota-porcentaje-label
+  font-weight bold
+  max-width 700px
+    
+.tabla-links-tabulado-grafico 
+  width 100%
+  min-height 500px
+  
+.td-links
+  width 300px
+  margin-right 0px
+  left 0
+  background-color #f5f5f5
+  vertical-align top
+  border-right 1px solid #e5e5e5
+  padding 0px
+  padding-top 5px
+  z-index 1000
+
+.td-tabulado-grafico
+  vertical-align top
+  
+#div-pantalla-izquierda
+  width 300px
+  
+#tabla-izquierda
+  width 100%
+  overflow visible
+  position relative
+  
+#id-encabezado
+  position sticky
+  width 100%
+  
+#barra-superior
+  display block
+  background-image -webkit-gradient(linear left top left bottom from(#ffd300) to(#ffbc00))
+  background-image -webkit-linear-gradient(top, #ffd300 0%, #ffbc00 100%)
+  background-image linear-gradient(to bottom, #ffd300 0%, #ffbc00 100%)
+  background-color #ffbc00
+  border-color #d7a721
+  color #5f4600
+  height 48px
+  overflow hidden
+    
+#barra-inferior
+  width 100%
+  background-color #fff
+  padding 0
+  z-index 2
+  top 0
+  display block
+  margin 0 auto
+  overflow hidden
+  text-align center
+  
+.contiene-grupos
+  magin 0 auto
+  margin-top 15px
+
+.grupo-img
+  width 90px
+  padding-top 10px
+  -webkit-transform perspective(1px) translateZ(0)
+  transform perspective(1px) translateZ(0)
+  box-shadow 0 0 1px transparent
+
+.grupo-img:hover
+  -webkit-animation-name hvr-wobble-vertical
+  animation-name hvr-wobble-vertical
+  -webkit-animation-duration 1s;
+  animation-duration 1s;
+  -webkit-animation-timing-function ease-in-out
+  animation-timing-function ease-in-out
+  -webkit-animation-iteration-count 1
+  animation-iteration-count 1
+
+@-webkit-keyframes hvr-wobble-vertical {
+  16.65% {
+    -webkit-transform: translateY(8px);
+    transform: translateY(8px);
+  }
+  33.3% {
+    -webkit-transform: translateY(-6px);
+    transform: translateY(-6px);
+  }
+  49.95% {
+    -webkit-transform: translateY(4px);
+    transform: translateY(4px);
+  }
+  66.6% {
+    -webkit-transform: translateY(-2px);
+    transform: translateY(-2px);
+  }
+  83.25% {
+    -webkit-transform: translateY(1px);
+    transform: translateY(1px);
+  }
+  100% {
+    -webkit-transform: translateY(0);
+    transform: translateY(0);
+  }
+}
+@keyframes hvr-wobble-vertical {
+  16.65% {
+    -webkit-transform: translateY(8px);
+    transform: translateY(8px);
+  }
+  33.3% {
+    -webkit-transform: translateY(-6px);
+    transform: translateY(-6px);
+  }
+  49.95% {
+    -webkit-transform: translateY(4px);
+    transform: translateY(4px);
+  }
+  66.6% {
+    -webkit-transform: translateY(-2px);
+    transform: translateY(-2px);
+  }
+  83.25% {
+    -webkit-transform: translateY(1px);
+    transform: translateY(1px);
+  }
+  100% {
+    -webkit-transform: translateY(0);
+    transform: translateY(0);
+  }
+}
+  
+#bs-izq
+  margin-left 50px
+  padding 8px
+  width 170px
+  
+#bs-der
+  float right
+  padding 5px
+  padding-right 50px
+  
+#texto
+  box-sizing border-box
+  width calc(100% - 680px)
+  height 85px
+  margin-left 10px
+  font-family helvetica
+  font-size 82%
+  color #7b7b7b
+  text-align justify
+  text-justify inter-word
+  margin-top 18px
+  line-height 17px
+  float left
+  position relative
+  overflow-y hidden
+  padding-right 16px
+  background-image url('../confort/img/continua.png')
+  background-position right bottom
+  background-repeat no-repeat
+  background-size 12px
+
+#logo-estadistica
+  margin-top 5px
+  margin-left 15px
+  padding 10px
+  float right
+  position relative
+  width 220px
+
+#logo-consejo
+  margin-top 5px
+  margin-left 15px
+  padding 10px
+  float right
+  width 80px
+    
+#img-logo
+  margin-top 5px
+  margin-left 15px
+  width 220px
+  padding 10px
+  float left
+  position relative 
+
+#foot
+  height 177px
+  background-color #111111
+  width 100%
+  right 0
+  bottom 0
+  left 0
+  margin-bottom 0
+  clear both
+  margin-top 0px
+  
+#foot-texto
+  font-family Open Sans,Arial, Helvetica, sans-serif
+  font-weight 400
+  font-style normal
+  font-size 13px
+  line-height 18px
+  color #ffffff
+  margin-left 20px
+    
+#foot-texto-2  
+  font-family Open Sans,Arial, Helvetica, sans-serif
+  font-weight 400
+  font-style normal
+  font-size 13px
+  line-height 18px
+  color #999999
+  margin-left 20px
+    
+#foot-img
+  margin-top 60px
+  margin-left 222px
+
+#contiene-textos-foot
+  float right
+  margin-top -45px
+  margin-right 300px
+
+.sin-sennial-indicador-elegido-grafico
+  background-image url('../confort/img/sin-sennial.png')
+  background-position-y center
+  border-bottom solid 3px #fff
+
+[nivel-titulo="3"]
+  font-size 110%
+
+[nivel-titulo="2"]
+  font-size 90%
+  background-color #c9bfd7
+  color #264c68
+  font-weight bold
+  line-height 30px
+  border-right 1px solid #fafafa
+  border-bottom 1px solid #fafafa
+  border-top 1px solid #fafafa 
+
+[nivel-titulo="1"]
+  height 55px
+  font-size 80%
+  color #767777
+
+[color-agrupacion_principal="auto0"][nivel-titulo="1"] .sennial-indicador-elegido-grafico
+  background-image url('../confort/img/indicador-elegido-naranja.png')
+  min-width 16px
+  background-repeat no-repeat
+  background-color fff
+  background-position center 
+
+[color-agrupacion_principal="auto0"][nivel-titulo="3"]
+  background-color #f09d1b
+
+[color-agrupacion_principal="auto0"][nivel-titulo="3"] a, a:visited
+  color #fff
+  
+[color-agrupacion_principal="auto0"][nivel-titulo="2"]
+  background-color #fff
+  color #f09d1b
+
+[color-agrupacion_principal="auto0"][nivel-titulo="2"] a, a:visited
+  color #f09d1b
+  
+[color-agrupacion_principal="auto0"][nivel-titulo="1"]
+  background-color #eeeeee
+  color #5c5c5c
+  border-top 1px solid #c9c2b9 
+ 
+[color-agrupacion_principal="auto0"][nivel-titulo="1"] a, a:visited
+  color #5a6878
+
+[color-agrupacion_principal="auto0"][nivel-titulo="1"] .es-link:hover
+  color #f09d1b
+
+[color-agrupacion_principal="auto0"][nivel-titulo="1"] .td-valores a:hover
+  color #e3ab00
+  
+[color-agrupacion_principal="auto1"][nivel-titulo="1"] .sennial-indicador-elegido-grafico
+  background-image url('../confort/img/indicador-elegido-verde.png')
+  width 16px
+  background-repeat no-repeat
+  background-color fff
+  background-position center
+  
+[color-agrupacion_principal="auto1"][nivel-titulo="3"]
+  background-color #1FAE92
+  
+[color-agrupacion_principal="auto1"][nivel-titulo="3"] a, a:visited
+  color #FFF
+
+[color-agrupacion_principal="auto1"][nivel-titulo="2"]
+  background-color #fff
+  color #198d76
+
+[color-agrupacion_principal="auto1"][nivel-titulo="2"] a, a:visited
+  color #1FAE92
+  
+[color-agrupacion_principal="auto1"][nivel-titulo="1"]
+  background-color #eeeeee
+  color #5c5c5c
+  border-top 1px solid #c9c2b9 
+
+[color-agrupacion_principal="auto1"][nivel-titulo="1"] a, a:visited
+  color #5a6878
+
+[color-agrupacion_principal="auto1"][nivel-titulo="1"] .es-link:hover
+  color #1fae92
+
+[color-agrupacion_principal="auto1"][nivel-titulo="1"] .td-valores a:hover
+  color #1fae92
+
+[color-agrupacion_principal="auto1"][nivel-titulo="1"] .td-valores a:hover
+  color #1fae92
+  
+[color-agrupacion_principal="auto2"][nivel-titulo="1"] .sennial-indicador-elegido-grafico
+  background-image url('../confort/img/indicador-elegido-violeta.png')
+  width 16px
+  background-repeat no-repeat
+  background-color fff
+  background-position center
+  
+[color-agrupacion_principal="auto2"][nivel-titulo="3"] a, a:visited
+  color #fff
+
+[color-agrupacion_principal="auto2"][nivel-titulo="3"]
+  background-color #A05B9F
+  
+[color-agrupacion_principal="auto2"][nivel-titulo="2"]
+  background-color #fff
+  font-size 88%
+
+[color-agrupacion_principal="auto2"][nivel-titulo="2"] a, a:visited
+  color #A05B9F
+  
+[color-agrupacion_principal="auto2"][nivel-titulo="1"]
+  background-color #eeeeee
+  color #5c5c5c
+  border-top 1px solid #c9c2b9
+  padding 5px
+
+[color-agrupacion_principal="auto2"][nivel-titulo="1"] a, a:visited
+  color #5a6878
+
+[color-agrupacion_principal="auto2"][nivel-titulo="1"] .es-link:hover
+  color #7664a2
+
+[color-agrupacion_principal="auto2"][nivel-titulo="1"] .td-valores a:hover
+  color #7664a2
+
+[color-agrupacion_principal="auto3"][nivel-titulo="1"] .sennial-indicador-elegido-grafico
+  background-image url('../confort/img/indicador-elegido-rojo.png')
+  width 16px
+  background-repeat no-repeat
+  background-color fff
+  background-position center
+  
+[color-agrupacion_principal="auto3"][nivel-titulo="3"]
+  background-color #EA5C1D
+
+[color-agrupacion_principal="auto3"][nivel-titulo="3"] a, a:visited
+  color #fff
+  
+[color-agrupacion_principal="auto3"][nivel-titulo="2"]
+  background-color #fff
+
+[color-agrupacion_principal="auto3"][nivel-titulo="2"] a, a:visited
+  color #EA5C1D
+
+[color-agrupacion_principal="auto3"][nivel-titulo="1"]
+  background-color #eeeeee
+  color #5c5c5c
+  border-top 1px solid #c9c2b9 
+  padding 5px
+    
+[color-agrupacion_principal="auto3"][nivel-titulo="1"] a, a:visited
+  color #5a6878
+
+[color-agrupacion_principal="auto3"][nivel-titulo="1"]  .es-link:hover
+  color #e45515
+
+[color-agrupacion_principal="auto3"][nivel-titulo="1"] .td-valores a:hover
+  color #c64c16
+
+
+[color-agrupacion_principal="auto5"][nivel-titulo="3"]
+  background-color #0C7DC1
+  
+[color-agrupacion_principal="auto5"][nivel-titulo="3"] a, a:visited
+  color #fff
+
+[color-agrupacion_principal="auto5"][nivel-titulo="2"]
+  background-color #fff
+
+[color-agrupacion_principal="auto5"][nivel-titulo="2"] a, a:visited
+  color #0C7DC1
+  
+[color-agrupacion_principal="auto5"][nivel-titulo="1"]
+  background-color #eeeeee
+  color #5c5c5c
+  border-top 1px solid #c9c2b9 
+  padding 5px
+    
+[color-agrupacion_principal="auto5"][nivel-titulo="1"] .sennial-indicador-elegido-grafico
+  background-image url('../confort/img/indicador-elegido-azul.png')
+  width 16px
+  background-repeat no-repeat
+  background-color fff
+  background-position center
+  
+[color-agrupacion_principal="auto5"][nivel-titulo="1"] a, a:visited
+  color #5a6878
+
+[color-agrupacion_principal="auto5"][nivel-titulo="1"] .es-link:hover
+  color #247aba
+
+[color-agrupacion_principal="auto5"][nivel-titulo="1"] .td-valores a:hover
+  color #237fc4
+
+[color-agrupacion_principal="auto6"][nivel-titulo="3"]
+  background-color #e18900
+
+[color-agrupacion_principal="auto6"][nivel-titulo="2"]
+  background-color #fff
+  color #d58200
+
+[color-agrupacion_principal="auto6"][nivel-titulo="2"] td
+  border-bottom 1px solid #bbb4aa 
+
+[color-agrupacion_principal="auto6"][nivel-titulo="1"]
+  background-color #eeeeee
+  color #5c5c5c
+  border-top 1px solid #c9c2b9 
+  padding 5px
+  
+[color-agrupacion_principal="auto6"][nivel-titulo="1"] a, a:visited
+  color #5a6878  
+
+[color-agrupacion_principal="auto6"][nivel-titulo="1"] .es-link:hover
+  color #e18900  
+
+[color-agrupacion_principal="auto6"][nivel-titulo="1"] .td-valores a:hover
+  color #d58200
+
+[color-agrupacion_principal="auto4"][nivel-titulo="3"]
+  background-color #1fae92
+
+[color-agrupacion_principal="auto4"][nivel-titulo="2"]
+  background-color #dad9d9
+  color #5e7623
+
+[color-agrupacion_principal="auto4"][nivel-titulo="2"] td
+  border-bottom 1px solid #bbb4aa  
+
+[color-agrupacion_principal="auto4"][nivel-titulo="1"]
+  background-color #eeeeee
+  color #5c5c5c
+  border-top 1px solid #c9c2b9 
+  padding 5px
+
+[color-agrupacion_principal="auto4"][nivel-titulo="1"] a, a:visited
+  color #5a6878
+
+[color-agrupacion_principal="auto4"][nivel-titulo="1"] .es-link:hover
+  color #1fae92
+
+[color-agrupacion_principal="auto4"][nivel-titulo="1"] .td-valores a:hover
+  color #1fae92
+
+  @-webkit-keyframes animatezoom {
+    from {-webkit-transform: scale(0.5)}
+    to {-webkit-transform: scale(1)}
+  }
+
+
+  @keyframes animatezoom {
+      from {transform: scale(0.5)}
+      to {transform: scale(1)}
+  }
+  
+  @-webkit-keyframes animatezoom2 {
+    from {-webkit-transform: scale(0)}
+    to {-webkit-transform: scale(1)}
+  }
+
+
+  @keyframes animatezoom2 {
+      from {transform: scale(0)}
+      to {transform: scale(1)}
+  }
+
+  @-webkit-keyframes animatezoomout {
+    from {-webkit-transform: scale(1)}
+    to {-webkit-transform: scale(0.5)}
+  }
+
+  @keyframes animatezoomout {
+      from {transform: scale(1)}
+      to {transform: scale(0.5)}
+  }
+
+  @keyframes animatezoomout {
+      from {transform: scale(1)}
+      to {transform: scale(0.5)}
+  }
+
+  @-webkit-keyframes animatediv {
+      0% {height: 177px}
+      100% {height: 100px;}
+  }
+
+  @keyframes animatediv {
+      0% {height: 177px}
+      100% {height: 100px;}
+  }
+
+  @-webkit-keyframes animatedivin {
+      0% {height: 100px}
+      100% {height: 177;}
+  }
+
+  @keyframes animatedivin {
+      0% {height: 100px}
+      100% {height: 177;}
+  }
+
+  @-webkit-keyframes typing {
+      from { height: 0; }
+      0% { opacity: 0; }
+      100% { opacity: 1; }
+  }
+
+  @-moz-keyframes typing {
+      from { height: 0; }
+      0% { opacity: 0; }
+      100% { opacity: 1; }
+  }
+
+  @keyframes typing {
+      from { height: 0; }
+      0% { opacity: 0; }
+      100% { opacity: 1; }
+  }
+
+  @-o-keyframes typing {
+      from { height: 0; }
+      0% { opacity: 0; }
+      100% { opacity: 1; }
+  }
+
+  @-webkit-keyframes typing-backwards {
+      0% {height: 115px}
+      100% {height: 0}
+      0% { opacity: 1; }
+      100% { opacity: 0; }
+  }
+
+  @-moz-keyframes typing-backwards {
+      0% {height: 115px}
+      100% {height: 0}
+      0% { opacity: 1; }
+      100% { opacity: 0; }
+  }
+
+  @keyframes typing-backwards {
+      0% {height: 115px}
+      100% {height: 0}
+      0% { opacity: 1; }
+      100% { opacity: 0; }
+  }
+
+  @-o-keyframes typing-backwards {
+      0% {height: 115px}
+      100% {height: 0}
+      0% { opacity: 1; }
+      100% { opacity: 0; }
+  }
+
+  @-webkit-keyframes fade {
+      0% { opacity: 0; }
+      100% { opacity: 1; }
+  }
+
+  @-moz-keyframes fade {
+      0% { opacity: 0; }
+      100% { opacity: 1; }
+  }
+
+  @-o-keyframes fade {
+      0% { opacity: 0; }
+      100% { opacity: 1; }
+  }
+
+  @keyframes fade {
+      0% { opacity: 0; }
+      100% { opacity: 1; }
+  }
+
+  @-webkit-keyframes fadeout {
+      0% { opacity: 1; }
+      100% { opacity: 0; }
+  }
+
+  @-moz-keyframes fadeout {
+      0% { opacity: 1; }
+      100% { opacity: 0; }
+  }
+
+  @keyframes fadeout {
+      0% { opacity: 1; }
+      100% { opacity: 0; }
+  }
+
+  @-o-keyframes fadeout {
+      0% { opacity: 1; }
+      100% { opacity: 0; }
+  }
+  
+@media print {
+   #div-pantalla-izquierda{
+       display:none;}
+  }
+
+@media print {
+   #contiene-textos-foot{
+       display:none;}
+  }
+
+@media print {
+   #foot{
+       display:none;}
+  }
+  
+@media print {
+   #annios-links{
+       display:none;}
+  }
+
+@media print {
+   body { -webkit-print-color-adjust: exact; }
+  }
+
+.tabla-desp-especial
+  background-color #b3b3b3
+  position absolute
+  float right
+  box-shadow 2px 3px 3px grey
+  -webkit-animation animatezoom2 1s
+  animation animatezoom2 1s
+  animation-fill-mode forwards
+  transform-origin top left
+  
+.tabla-desp-especial td
+  font-size 90%
+  padding 10px
+  text-align right
+  border-right solid 1px #cccccc
+  
+.tabla-desp-especial th
+  white-space nowrap  
+  max-width 120px
+  white-space normal
+  border-left 1px solid #888888
+  line-height 15px
+  
+.tabla-desp-especial caption
+  color #FFF
+  font-size 90%
+  padding 10px
+  background-color #404040
+  
+.renglon-vacio
+  background-color #eeeeee
+  padding 10px
+  border-bottom 1px solid #fafafa
+  border-top    0px solid #fafafa
+  border-left   1px solid #fafafa
+  border-right  0px solid #fafafa
+  
+.span-img-icono
+  text-align justify
+  
+.titulo-contenedor-graficos
+  color #fff
+  font-size 95%
+  padding 3px
+  background-color #2e7792
+  border-bottom 1px solid #375677
+  
+.titulo-grafico-z
+  color #2b4b6d
+  font-size 90%
+  padding 3px
+  background-color #8ab4b6
+  border-bottom 1px solid #2e7993
+  
+.img-icono-indicador
+  z-index -1
+  repeat no-repeat
+
+.ancla
+  position relative
+  top -32px
+
+.chartElement.piramide 
+  text-align center
+  margin-right 110
+
+.hide-tabulado-cuadro
+  visibility collapse
