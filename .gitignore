@@ -35,6 +35,5 @@ node_modules
 local-*
 *-local.*
 sessions/
-.vscode/launch.json
 
-# en apps si dejar el package-lock.json
+package-lock.json

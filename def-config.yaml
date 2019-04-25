@@ -58,7 +58,7 @@ client-setup:
   lang: es
   conTextoPrincipal: false
   labels:
-    agrupacion-principal: Autonomía
+    agrupacion-principal: Derecho
   logos:
   - estadistica
 

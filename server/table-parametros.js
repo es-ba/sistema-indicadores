@@ -9,9 +9,11 @@ module.exports = function(context){
             update: admin,
         },
         fields:[
-            {name:'unique_row'         , label:'Fila Única'        , typeName:'boolean' , nullable:false },
-            {name:'nombre_principal'   , label:'Nombre del Home'   , typeName:'text'                     },
-            {name:'cortante_principal' , label:'Cortante del Home' , typeName:'text'    , nullable:false },
+            {name:'unique_row'         , label:'Fila Única'         , typeName:'boolean' , nullable:false },
+            {name:'nombre_principal'   , label:'Nombre del Home'    , typeName:'text'    },
+            {name:'cortante_principal' , label:'Cortante del Home'  , typeName:'text'    },
+            {name:'nombre_sistema'     , label:'Nombre del sistema' , typeName:'text'    },
+            {name:'texto_sistema'      , label:'Texto en principal' , typeName:'text'    },
         ],
         primaryKey:['unique_row'],
         constraints:[

@@ -1,4 +1,6 @@
 ﻿set search_path= sigba;
+--18/6/29
+alter table valores add constraint "valor sin comas" check (valor not like '%,%')
 --17/11/09
 alter table valores
     add column g_g_activ text;

@@ -1,11 +1,8 @@
---CONSTRAINS SCHEMA SIGBA
-ALTER TABLE indicadores_variables
- ADD CONSTRAINT "valor invalido en ctrl_totales" CHECK (ctrl_totales in ('s', 't', 'o'));
  
 ALTER TABLE indicadores ALTER COLUMN nohabilitados TYPE jsonb[] USING null::json[];
  
--- TRIGGERS SCHEMA SIGBA
-CREATE OR REPLACE FUNCTION sigba.indicadores_variables_sincro_delete_trg()
+
+CREATE OR REPLACE FUNCTION indicadores_variables_sincro_delete_trg()
   RETURNS trigger AS
 $BODY$
 declare
@@ -14,14 +11,14 @@ declare
 begin
     v_indicador=OLD;
     v_ind= v_indicador.indicador;
-    DELETE FROM sigba.indicadores_variables where indicador= v_ind;
+    DELETE FROM indicadores_variables where indicador= v_ind;
     return OLD; 
 end;
 $BODY$
   LANGUAGE plpgsql VOLATILE
   COST 100;
   
-CREATE OR REPLACE FUNCTION sigba.valores_cortes_trg()
+CREATE OR REPLACE FUNCTION valores_cortes_trg()
   RETURNS trigger AS
 $BODY$
 declare
@@ -42,7 +39,7 @@ begin
     loop
       v_new_value=v_new_values -> v_column;
       select corte  into es_corte
-          from sigba.variables
+          from variables
           where variable=v_column::text;  
       if not( jsonb_typeof(v_new_value)= 'null') and v_new_value is distinct from '"tcaba"'::jsonb 
         and es_corte 
@@ -109,11 +106,11 @@ $BODY$
   LANGUAGE plpgsql VOLATILE
   security definer;
 
--- Function: sigba.valores_validar_trg()
+-- Function: valores_validar_trg()
 
--- DROP FUNCTION sigba.valores_validar_trg();
+-- DROP FUNCTION valores_validar_trg();
 
-CREATE OR REPLACE FUNCTION sigba.valores_validar_trg()
+CREATE OR REPLACE FUNCTION valores_validar_trg()
   RETURNS trigger AS
 $BODY$
 declare
@@ -128,7 +125,7 @@ begin
     loop
       v_es_variable=0;
       SELECT 1 into v_es_variable
-        FROM sigba.variables
+        FROM variables
         WHERE corte = TRUE AND variable=v_column;
       if coalesce(v_es_variable,0)=1 then
         SELECT variable
@@ -147,7 +144,6 @@ $BODY$
   LANGUAGE plpgsql VOLATILE
   COST 100;
 
---FUNCIONES SCHEMA SIGBA y SCHEMA COMUN
   
 DROP SCHEMA IF EXISTS comun CASCADE;
 CREATE SCHEMA comun;
@@ -168,27 +164,27 @@ $BODY$
   LANGUAGE plpgsql IMMUTABLE
   COST 100;
 
-CREATE TABLE sigba.totales_calculados(
-  indicador text NOT NULL,
-  cortante jsonb,
-  corte jsonb,
-  valor_sum text,
-  CONSTRAINT totales_calculados_pkey PRIMARY KEY (indicador, corte)
-);
+--CREATE TABLE totales_calculados(
+--  indicador text NOT NULL,
+--  cortante jsonb,
+--  corte jsonb,
+--  valor_sum text,
+--  CONSTRAINT totales_calculados_pkey PRIMARY KEY (indicador, corte)
+--);
 
-grant select on "totales_calculados" to "sigba_user";
+--grant select on "totales_calculados" to "sigba_user";
 
 
-CREATE OR REPLACE VIEW sigba.diferencia_totales AS 
+CREATE OR REPLACE VIEW diferencia_totales AS 
   SELECT x.val,x.val_cal, i.denominacion,x.indicador,x.cortes FROM (
       SELECT v.valor val , tc.valor_sum val_cal,v.indicador, v.cortes FROM valores v INNER JOIN (
           SELECT valor_sum,indicador, corte FROM totales_calculados 
       ) tc ON tc.indicador=v.indicador AND tc.corte=v.cortes WHERE es_automatico IS FALSE
   ) x LEFT JOIN indicadores i ON i.indicador= x. indicador WHERE val<>val_cal ;
 
-grant select on "diferencia_totales" to "sigba_user";
+--grant select on "diferencia_totales" to "sigba_user";
 
-CREATE OR REPLACE FUNCTION sigba.cargar_totales()
+CREATE OR REPLACE FUNCTION cargar_totales()
   RETURNS integer AS
 $BODY$
 DECLARE
@@ -257,7 +253,7 @@ BEGIN
 END
 $BODY$;
   
-CREATE OR REPLACE FUNCTION sigba.valores_totales()
+CREATE OR REPLACE FUNCTION valores_totales()
   RETURNS integer AS
 $BODY$
 declare
@@ -274,7 +270,6 @@ declare
   valorAInsertar   text;
   v_quoted_set     text[];
 begin
-    set search_path=sigba;
     delete from totales_calculados;
     FOR v_indcortante IN
         with setsTotales as (
@@ -334,48 +329,48 @@ $BODY$
   LANGUAGE plpgsql VOLATILE;
   
   
--- TRIGGERS EN TABLAS EN SCHEMA SIGBACREATE TRIGGER changes_trg
--- Trigger: indicadores_variables_sincro_delete_trg on sigba.indicadores
 
--- DROP TRIGGER indicadores_variables_sincro_delete_trg ON sigba.indicadores;
+-- Trigger: indicadores_variables_sincro_delete_trg on indicadores
+
+-- DROP TRIGGER indicadores_variables_sincro_delete_trg ON indicadores;
 
 CREATE TRIGGER indicadores_variables_sincro_delete_trg
   BEFORE DELETE
-  ON sigba.indicadores
+  ON indicadores
   FOR EACH ROW
-  EXECUTE PROCEDURE sigba.indicadores_variables_sincro_delete_trg();
+  EXECUTE PROCEDURE indicadores_variables_sincro_delete_trg();
 
 CREATE TRIGGER valores_cortes_before_trg
   BEFORE INSERT OR UPDATE
-  ON sigba.valores
+  ON valores
   FOR EACH ROW
-  EXECUTE PROCEDURE sigba.valores_cortes_trg();
+  EXECUTE PROCEDURE valores_cortes_trg();
 
 CREATE TRIGGER valores_cortes_after_trg
   AFTER INSERT OR UPDATE
-  ON sigba.valores
+  ON valores
   FOR EACH ROW
-  EXECUTE PROCEDURE sigba.valores_cortes_trg();
+  EXECUTE PROCEDURE valores_cortes_trg();
 
 
--- Trigger: valores_validar_trg on sigba.valores
+-- Trigger: valores_validar_trg on valores
 
--- DROP TRIGGER valores_validar_trg ON sigba.valores;
+-- DROP TRIGGER valores_validar_trg ON valores;
 
 CREATE TRIGGER valores_validar_trg
   BEFORE INSERT OR UPDATE
-  ON sigba.valores
+  ON valores
   FOR EACH ROW
-  EXECUTE PROCEDURE sigba.valores_validar_trg();
+  EXECUTE PROCEDURE valores_validar_trg();
 
 ----------------------------------------------------------------------
 
--- Function: sigba.syncro_tabulados()
+-- Function: syncro_tabulados()
 
--- DROP FUNCTION sigba.syncro_tabulados();
+-- DROP FUNCTION syncro_tabulados();
 
 
-CREATE OR REPLACE FUNCTION sigba.syncro_tabulados()
+CREATE OR REPLACE FUNCTION syncro_tabulados()
   RETURNS integer AS 
 $BODY$
 declare
@@ -404,19 +399,19 @@ begin
   return tabIn;
 end;
 $BODY$
-  LANGUAGE plpgsql  /*SECURITY DEFINER*/;
-ALTER FUNCTION sigba.syncro_tabulados()
-  OWNER TO sigba_owner;
+  LANGUAGE plpgsql VOLATILE SECURITY DEFINER;
+--ALTER FUNCTION syncro_tabulados()
+--  OWNER TO sigba_owner;
 ----------------------------------------------------------------------
-ALTER TABLE tabulados_variables
-DROP  CONSTRAINT "tabulados_variables tabulados REL ";
+--ALTER TABLE tabulados_variables
+--DROP  CONSTRAINT "tabulados_variables tabulados REL ";
 ALTER TABLE tabulados_variables
 ADD CONSTRAINT "tabulados_variables tabulados REL " FOREIGN KEY (indicador, cortantes)
-      REFERENCES sigba.tabulados (indicador, cortantes) MATCH SIMPLE
+      REFERENCES tabulados (indicador, cortantes) MATCH SIMPLE
       ON UPDATE CASCADE ON DELETE CASCADE;
 ----------------------------------------------------------------------
 
-CREATE OR REPLACE FUNCTION sigba.tabulados_variables_syncro_trg()
+CREATE OR REPLACE FUNCTION tabulados_variables_syncro_trg()
   RETURNS trigger AS
 $BODY$
 begin
@@ -426,14 +421,54 @@ begin
 end;
 $BODY$
   LANGUAGE plpgsql  /*SECURITY DEFINER*/;
-ALTER FUNCTION sigba.tabulados_variables_syncro_trg()
-  OWNER TO sigba_owner;
+--ALTER FUNCTION tabulados_variables_syncro_trg()
+--  OWNER TO sigba_owner;
   
 ----------------------------------------------------------------------
 
 
     CREATE TRIGGER tabulados_variables_syncro_trg
   AFTER INSERT
-  ON sigba.tabulados
+  ON tabulados
   FOR EACH ROW
-  EXECUTE PROCEDURE sigba.tabulados_variables_syncro_trg();
+  EXECUTE PROCEDURE tabulados_variables_syncro_trg();
+  
+  
+DROP FUNCTION IF EXISTS agregar_quitar_variables();
+
+CREATE OR REPLACE FUNCTION agregar_quitar_variables()
+  RETURNS TEXT AS
+$BODY$
+DECLARE
+   estado_variable  RECORD;
+BEGIN
+  FOR estado_variable IN
+      SELECT v.estado_tabla_valores,v.variable FROM variables v
+  LOOP
+    IF estado_variable.estado_tabla_valores='nueva' THEN 
+      EXECUTE format('ALTER TABLE valores ADD COLUMN %I TEXT',estado_variable.variable);
+      UPDATE variables 
+        SET estado_tabla_valores=NULL 
+        WHERE variable=estado_variable.variable;
+    END IF;
+    IF estado_variable.estado_tabla_valores='quitar' THEN
+      BEGIN
+        EXECUTE format('ALTER TABLE valores DROP COLUMN %I',estado_variable.variable);
+      EXCEPTION
+        WHEN undefined_column THEN 
+          -- ok! la variable seguramente era nueva y se borró, no se llegó a agregar nunca
+        WHEN OTHERS THEN 
+          RAISE;
+      END;
+      DELETE FROM variables v 
+        WHERE v.variable=estado_variable.variable;
+    END IF;
+  END LOOP;
+  return 'OK';
+END;
+$BODY$
+  LANGUAGE plpgsql VOLATILE SECURITY DEFINER
+  COST 100;
+--ALTER FUNCTION agregar_quitar_variables()
+--  OWNER TO sigba_owner;
+

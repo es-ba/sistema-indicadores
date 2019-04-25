@@ -33,6 +33,8 @@ module.exports = function(context){
             {name:'corte_principal'          , label:'Variable en principal'                 , typeName:'text'},
             {name:'valor_principal'          , label:'Categoria en principal'                , typeName:'text'},
             {name:'grafico_principal'        , label:'Se muestra gráfico en el principal'    , typeName:'boolean', defaultValue:false},
+            {name:'annios_ocultables'        , label:'ocultar annios distinto de 0 o 5'      , typeName:'boolean', defaultValue:false},
+            {name:'nuevo'                    , label:'nuevo'                                 , typeName:'boolean', defaultValue:false},
         ],
         primaryKey:['indicador'],
         foreignKeys:[{references:'dimension', fields:['dimension']},

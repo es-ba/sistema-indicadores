@@ -1,4 +1,4 @@
-    "use strict";
+"use strict";
 
 /*jshint eqnull:true */
 /*jshint node:true */
@@ -20,9 +20,11 @@ if(process.argv[2]=='--dir'){
     console.log('cwd',process.cwd());
 }
 
-var extensionServeStatic = require('extension-serve-static');
+var FILASXGRAFICO=6;
+var COLSPANRELLENO=9;
 
-var changing = require('best-globals').changing;
+
+var {changing, spec, sameValues} = require('best-globals');
 var backend = require("backend-plus");
 var MiniTools = require("mini-tools");
 var jsToHtml=require('js-to-html');
@@ -67,13 +69,11 @@ class AppSIGBA extends backend.AppBackend{
        return str.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
     }
     // FALTA IMPLEMENTAR ESTO
-    nombreDelHome(client){
-        return Promise.resolve([]).then(function(){return 'principal';});
-        return  client.query(
-            'SELECT nombre_home FROM parametros;'
-        ).fetchOneRowIfExists().then(function(result){
-            //var nombreHome=(result.row && result.row.nombre_home)||'principal';
-            return 'principal';
+    parametrosSistema(client){
+        return Promise.resolve([]).then(function(){
+            return client.query('SELECT * FROM parametros').fetchOneRowIfExists().then(function(result){
+                return result.row
+            });
         });
     }
     reporteBonito(client, defTables, annios, where,color,controles) {
@@ -85,8 +85,8 @@ class AppSIGBA extends backend.AppBackend{
             return Promise.resolve([]);
         }
         var table=defTables[0].tabla;
-        return be.nombreDelHome(client).then(function(homeName){
-            urlYClasesTabulados=homeName;
+        return be.parametrosSistema(client).then(function(parametros){
+            urlYClasesTabulados=parametros.nombre_principal;
             return client.query(
                 'SELECT * FROM '+be.db.quoteIdent(table)+
                 ' WHERE '+(where||'true')+
@@ -99,7 +99,7 @@ class AppSIGBA extends backend.AppBackend{
                         color=registro.agrupacion_principal;
                 }
                 var whereHija=(defTables[0].joinSiguiente||[]).map(function(nombreCampo){
-                    return be.db.quoteIdent(nombreCampo)+" = "+be.db.quoteText(registro[nombreCampo]);
+                    return be.db.quoteIdent(nombreCampo)+" = "+be.db.quoteLiteral(registro[nombreCampo]);
                 }).join(" and ").concat((defTables[0].condicion)?' and '+defTables[0].condicion:'');
                 return be.reporteBonito(client, defTables.slice(1), annios, whereHija,color,controles).then(function(listaTrHijos){
                     var listaTd;
@@ -113,17 +113,23 @@ class AppSIGBA extends backend.AppBackend{
                     ).fetchOneRowIfExists().then(function(resultCortantes){
                         result=resultCortantes;
                         return client.query(`
-                        SELECT i.dimension,i.indicador,i.denominacion,i.def_con,i.def_ope,i.cob,i.desagregaciones,i.uso_alc_lim,i.universo,i.metas,f.denominacion fte,u.denominacion um
+                        SELECT i.dimension,i.indicador,i.denominacion,i.def_con,i.def_ope,i.cob,i.desagregaciones,i.uso_alc_lim,
+                               i.universo,i.metas,f.denominacion fte,u.denominacion um,i.nuevo
                             FROM indicadores i LEFT JOIN fte f ON i.fte=f.fte LEFT JOIN um u ON u.um=i.um
                             WHERE i.indicador=$1
                             ORDER BY i.indicador,i.dimension
                         `,[registro.indicador]).fetchOneRowIfExists().then(function(resultado){
                             registro.ficha=resultado.row;
                     })}).then(function(){
-                        listaTd=[html.td({class:'td-'+urlYClasesTabulados+'-renglones',colspan:4-defTables.length},[html.div({class:'espacio-reserva'},'-')])].concat(
+                        listaTd=[
+                            html.td({class:'td-'+urlYClasesTabulados+'-renglones',colspan:4-defTables.length},[html.div({class:'espacio-reserva'},'-')])
+                        ].concat(
                             defTables[0].camposAMostrar.map(function(nombreCampo,i){
                                 var id=registro[defTables[0].campoId];
                                 var attributes={colspan:i?1:defTables.length+1+(defTables[0].tabla=='indicadores'?0:6),class:'campo_'+nombreCampo};
+                                if(registro.nuevo){
+                                    attributes["nuevo-registro"]='nuevo';
+                                }
                                 if(registro.indicador ){
                                     attributes.id=id;
                                     if(registro.def_con){
@@ -149,14 +155,16 @@ class AppSIGBA extends backend.AppBackend{
                                     }
                                 }
                                 var sufijoTab=defTables[0].tabla||'';
-                                var htmlIcono= html.span({class:'span-img-icono'+sufijoTab},
-                                    registro.icono?html.img({class:'img-icono-'+sufijoTab,src:skinUrl+'img/'+registro.icono}):null);
-                                    var htmlA={class:'es-link'};
-                                    if(registro.indicador){
-                                        htmlA.href=''+absolutePath+''+urlYClasesTabulados+'-indicador?indicador='+(registro.indicador||'');
-                                        htmlA['cant-cortantes']=result.row.cant_cortantes;
-                                    }
-                            return html.td(attributes,[
+                                var htmlIcono= html.span(
+                                    {class:'span-img-icono'+sufijoTab},
+                                    registro.icono?html.img({class:'img-icono-'+sufijoTab,src:skinUrl+'img/'+registro.icono}):null
+                                );
+                                var htmlA={class:'es-link'};
+                                if(registro.indicador){
+                                    htmlA.href=''+absolutePath+''+urlYClasesTabulados+'-indicador?indicador='+(registro.indicador||'');
+                                    htmlA['cant-cortantes']=result.row.cant_cortantes;
+                                }
+                                return html.td(attributes,[
                                     htmlIcono,
                                     html.span({id:id, class:'ancla'},"\u00a0"),
                                     html.a(htmlA,registro.denominacion_principal?registro.denominacion_principal:registro[nombreCampo]),
@@ -180,7 +188,9 @@ class AppSIGBA extends backend.AppBackend{
                         if(table==='indicadores'){
                             var listaTdValores=[];
                             var ultimoAnnioDisponible;
-                            var cortantesEnPrincipalObj;
+                            if(be.hayCortantePrincipal){
+                                var cortantesEnPrincipalObj;
+                            }
                             obtenerValoresPrincipal=client.query(
                                 `select max(cortes->>'annio') annio from celdas where indicador=$1`,[registro.indicador]
                             ).fetchOneRowIfExists().then(function(result){
@@ -189,11 +199,13 @@ class AppSIGBA extends backend.AppBackend{
                                     variablesPrincipal:[{"annio":true}],
                                     cortes:[{"annio":ultimoAnnioDisponible}]
                                 };
-                                be.cortantesEnPrincipal.cortantesPrincipalesArr.forEach(function(variable){
-                                    var variablePrincipal={"annio":true};
-                                    variablePrincipal[variable.variable_principal]=true;
-                                    cortantesEnPrincipalObj.variablesPrincipal.push(variablePrincipal);
-                                })
+                                if(be.hayCortantePrincipal){
+                                    be.cortantesEnPrincipal.cortantesPrincipalesArr.forEach(function(variable){
+                                        var variablePrincipal={"annio":true};
+                                        variablePrincipal[variable.variable_principal]=true;
+                                        cortantesEnPrincipalObj.variablesPrincipal.push(variablePrincipal);
+                                    })
+                                }
                                 if(registro.indicador && registro.corte_principal){
                                     var test={}
                                     test[registro.corte_principal]=registro.valor_principal;
@@ -205,48 +217,64 @@ class AppSIGBA extends backend.AppBackend{
                                 }
                                 
                             }).then(function(){
-                                var sqlPrincipalTest="SELECT * FROM celdas WHERE indicador=$1 AND cortantes in ( "+
-                                cortantesEnPrincipalObj.variablesPrincipal.map(function(crt){
-                                    return be.db.quoteLiteral(JSON.stringify(crt));
-                                }).join(',')+") AND "+cortantesEnPrincipalObj.cortes.map(function(crt,i){
-                                    for(var key in crt){
-                                        return "cortes->> "+be.db.quoteLiteral(key)+" = "+be.db.quoteLiteral(crt[key]);
-                                    }
-                                }).join(' AND ');
+                                var sqlPrincipal=`
+                                    SELECT indicador,cortes,coalesce(valor::text,valor_esp) valor,cv,num,dem,cortantes,usu_validacion,
+                                           fecha_validacion,origen_validacion,es_automatico,valor_esp 
+                                        FROM celdas 
+                                        WHERE indicador=$1 AND cortantes in ( `+
+                                        cortantesEnPrincipalObj.variablesPrincipal.map(function(crt){
+                                            return be.db.quoteLiteral(JSON.stringify(crt));
+                                        }).join(',')+") AND "+cortantesEnPrincipalObj.cortes.map(function(crt,i){
+                                            for(var key in crt){
+                                                return "cortes->> "+be.db.quoteNullable(key)+" = "+be.db.quoteNullable(crt[key]);
+                                            }
+                                        }).join(' AND ');
                                 return client.query(
-                                    sqlPrincipalTest
+                                    sqlPrincipal
                                     ,[registro.indicador]
                                 ).fetchAll().then(function(result){
                                     var filasValoresAPrincipal=result.rows;
                                     var valCeldasPrincipal=[];
                                     var indiceCeldasPrincipal={'null': 0};
                                     valCeldasPrincipal[indiceCeldasPrincipal['null']]={valor:null};
-                                    be.cortantesEnPrincipal.categoriasPrincipalArr.forEach(function(categoria,i){
-                                        indiceCeldasPrincipal[categoria.valor]=i+1; 
-                                        valCeldasPrincipal[i+1]={valor:null};
-                                    });
-                                    var crtPrincArr=be.cortantesEnPrincipal.cortantesPrincipalesArr.map(function(crt){
-                                            return crt.variable_principal;
-                                    });
-                                    filasValoresAPrincipal.forEach(function(filaAPrincipal){
-                                        var test=Object.keys(filaAPrincipal.cortes).some(function(element){
-                                            return crtPrincArr.indexOf(element)>=0
+                                    if(be.hayCortantePrincipal){
+                                        be.cortantesEnPrincipal.categoriasPrincipalArr.forEach(function(categoria,i){
+                                            indiceCeldasPrincipal[categoria.valor]=i+1; 
+                                            valCeldasPrincipal[i+1]={valor:null};
                                         });
-                                        be.cortantesEnPrincipal.cortantesPrincipalesArr.forEach(function(variable){
-                                            if(!test){
-                                                valCeldasPrincipal[indiceCeldasPrincipal['null']]=filaAPrincipal;
-                                            }else{
-                                                valCeldasPrincipal[indiceCeldasPrincipal[filaAPrincipal.cortes[variable.variable_principal]]]=filaAPrincipal;
-                                            }
+                                    
+                                        var crtPrincArr=be.cortantesEnPrincipal.cortantesPrincipalesArr.map(function(crt){
+                                                return crt.variable_principal;
                                         });
-                                    });
+                                        filasValoresAPrincipal.forEach(function(filaAPrincipal){
+                                            var test=Object.keys(filaAPrincipal.cortes).some(function(element){
+                                                return crtPrincArr.indexOf(element)>=0
+                                            });
+                                            be.cortantesEnPrincipal.cortantesPrincipalesArr.forEach(function(variable){
+                                                var posicionCeldas;
+                                                if(!test){
+                                                    posicionCeldas='null';
+                                                }else{
+                                                    posicionCeldas=filaAPrincipal.cortes[variable.variable_principal];
+                                                }
+                                                valCeldasPrincipal[indiceCeldasPrincipal[posicionCeldas]]=filaAPrincipal;
+                                            });
+                                        });
+                                    }else{
+                                        if(filasValoresAPrincipal[0]){
+                                            valCeldasPrincipal[indiceCeldasPrincipal['null']]=filasValoresAPrincipal[0];
+                                        }
+                                    }
                                     annioPrincipal=ultimoAnnioDisponible;
                                     listaTdValores.push(html.td({class:'td-valores'},annioPrincipal));
                                     return valCeldasPrincipal;
                                 }).then(function(valoresPrincipal){
                                     valoresPrincipal.forEach(function(valorPrincipal){
-                                        var indicadorAnnio
-                                        var valorReporteBonito=(valorPrincipal.valor==null)?'///':be.puntosEnMiles(be.decimalesYComa(valorPrincipal.valor,registro.decimales,','));
+                                        var indicadorAnnio;
+                                        var valorReporteBonito=
+                                            (valorPrincipal.valor==null)?
+                                            '///':
+                                            be.puntosEnMiles(be.decimalesYComa(valorPrincipal.valor,registro.decimales,','));
                                         listaTdValores.push(html.td({class:'td-valores'},valorReporteBonito));
                                     })
                                     controles.filasEnDimension[registro.dimension]=controles.filasEnDimension[registro.dimension]||[];
@@ -263,7 +291,10 @@ class AppSIGBA extends backend.AppBackend{
                             })
                         }
                         return obtenerValoresPrincipal.then(function(listaDeseada){
-                            var estaFila=html.tr({class:'nivel-titulo',"nivel-titulo": defTables.length, "color-agrupacion_principal":color||'otro'},listaTd.concat(listaDeseada))
+                            var estaFila=html.tr(
+                                {class:'nivel-titulo',"nivel-titulo": defTables.length, "color-agrupacion_principal":color||'otro'},
+                                listaTd.concat(listaDeseada)
+                            )
                             var obtenerTabuladoPrincipal=Promise.resolve([]);
                             if(table==='indicadores'){
                                 controles.filasEnDimension[registro.dimension].push(estaFila);
@@ -287,16 +318,42 @@ class AppSIGBA extends backend.AppBackend{
                                                 var matrixGrafico=matrix.matrixGraf;
                                                 return be.traeInfoMatrix(client,registro.indicador).then(function(infoMatrixGraf){
                                                     tabulado=changing(tabulado,infoMatrixGraf);
+                                                    /* TODO: si hay dos gráficos en la misma dimensión hay que controlar también en qué lugar
+                                                             se agregó el último gráfico
+                                                    */
+                                                    var dondeAgregar=Math.max(0, controles.posicionEnDimension[registro.dimension]-FILASXGRAFICO)
+                                                    var filasEnEstaDimension=controles.filasEnDimension[registro.dimension];
+                                                    var renglonesDeRelleno=0;
+                                                    if(filasEnEstaDimension.length<FILASXGRAFICO){
+                                                        /* que este valor sea igual al height de [nivel-titulo=1] */
+                                                        var renglonesDeRelleno=(FILASXGRAFICO-filasEnEstaDimension.length-1);
+                                                        var alturaDelRelleno=55*(FILASXGRAFICO-filasEnEstaDimension.length-1);
+                                                    }
                                                     controles.filasEnDimension[registro.dimension][
-                                                        Math.max(0, controles.posicionEnDimension[registro.dimension]-7)
+                                                        dondeAgregar
                                                     ].content.push(html.td({
-                                                        rowspan:7, 
+                                                        rowspan:FILASXGRAFICO-renglonesDeRelleno, 
                                                         class:'box-grafico-principal',
                                                     },html.div({
                                                         class:'tabulado-html',
                                                         'para-graficador':JSON.stringify(matrixGrafico),
                                                         'info-tabulado':JSON.stringify(tabulado)
                                                     })));
+                                                    /* la siguente condición vale solo si se puede poner un gráfico por dimensión */
+                                                    if(filasEnEstaDimension.length<FILASXGRAFICO){
+                                                        if(!be.hayCortantePrincipal){
+                                                            COLSPANRELLENO=7;
+                                                        }
+                                                        filasEnEstaDimension[controles.filasEnDimension[registro.dimension].length-1].content.push(
+                                                            html.tr({
+                                                                class:'nivel-titulo',
+                                                                "nivel-titulo": defTables.length, 
+                                                                "color-agrupacion_principal":color||'otro'
+                                                            },[
+                                                                html.td({class:'td-principal-renglones',colspan:COLSPANRELLENO},[html.div({style:'height:'+alturaDelRelleno+'px;'})])
+                                                            ])
+                                                        )
+                                                    }
                                                     return matrixGrafico;
                                                 })
                                             });
@@ -367,7 +424,7 @@ class AppSIGBA extends backend.AppBackend{
                         throw new Error("invalid varInv");
                     }
                     return 'cc_'+varInv+'.valor_corte '+varInv;
-                }).join(',') +", valor, cv " + 
+                }).join(',') +", coalesce(valor::text,valor_esp) valor, cv " + 
                     "\n  FROM celdas v  LEFT JOIN "+ variables.map(function(varInv){
                         return (" cortes_celdas cc_"+varInv +
                             " ON v.indicador=cc_"+varInv+".indicador AND v.cortes=cc_"+varInv+".cortes AND cc_"+varInv+".variable='"+varInv+"'" +
@@ -388,7 +445,7 @@ class AppSIGBA extends backend.AppBackend{
                     }
                 });
                 datum.list=annio?result.rows.map(function(row){delete row.annio;return row;}):result.rows;
-                datum.vars=annio?datum.vars.filter(e_var => e_var.name !=='annio'):datum.vars;//fs.writeFile('C:/compartida/datum/'+indicador+'_'+Date.now()+'_datum.json',JSON.stringify(datum),{encoding:'utf8'}) 
+                datum.vars=annio?datum.vars.filter(e_var => e_var.name !=='annio'):datum.vars;
                 datum.oneColumnTitle=(annio && cantVariablesCol==0)?annio:'';
             })
         })
@@ -416,7 +473,7 @@ class AppSIGBA extends backend.AppBackend{
                 tabulator.defaultShowAttribute='valor';
                 var matrixTab=tabulator.toMatrix(tab.datum);
                 var matrixGraf=tabulator.toMatrix(graf.datum);
-                return {matrixTab,matrixGraf};
+                return {matrixTab,matrixGraf,datum:tab.datum};
             })
         })
     }
@@ -426,12 +483,14 @@ class AppSIGBA extends backend.AppBackend{
     
     traeInfoMatrix(client,indicador){
         return client.query(
-            "SELECT i.denominacion as i_denom ,i.con_nota_pie con_nota,f.fte as fte, f.denominacion as f_denom,f.graf_ult_annios as graf_ult_annios, "
-                +"f.graf_cada_cinco as graf_cada_cinco, "
-                +"u.denominacion as u_denom,u.um as um,u.nota_pie nota_pie, i.decimales FROM indicadores i " 
-                +"\n LEFT JOIN fte f ON f.fte=i.fte " 
-                +"\n LEFT JOIN um u ON u.um=i.um "
-                +"\n WHERE indicador=$1",
+            `SELECT i.denominacion as i_denom ,i.con_nota_pie con_nota,f.fte as fte, f.denominacion as f_denom,
+                    f.graf_ult_annios as graf_ult_annios, 
+                    f.graf_cada_cinco as graf_cada_cinco, 
+                    u.denominacion as u_denom,u.um as um,u.nota_pie nota_pie, i.decimales, i.annios_ocultables 
+                FROM indicadores i 
+                    LEFT JOIN fte f ON f.fte=i.fte 
+                    LEFT JOIN um u ON u.um=i.um 
+                WHERE indicador=$1`,
             [indicador]
         ).fetchOneRowIfExists().then(function(result){
             var infoIndicador=result.row;
@@ -446,7 +505,8 @@ class AppSIGBA extends backend.AppBackend{
                 decimales:infoIndicador.decimales,
                 fte:infoIndicador.fte,
                 graf_ult_annios:infoIndicador.graf_ult_annios,
-                graf_cada_cinco:infoIndicador.graf_cada_cinco
+                graf_cada_cinco:infoIndicador.graf_cada_cinco,
+                annios_ocultables:infoIndicador.annios_ocultables,
             }
         })
     }
@@ -458,7 +518,7 @@ class AppSIGBA extends backend.AppBackend{
         var sql = "SELECT distinct valor_corte annio FROM cortes_celdas "+
             "WHERE variable = 'annio'"+ (indicador?" and indicador = $1": "")+
             "ORDER BY annio desc";
-        return client.query(sql,indicador?[indicador]:[]).then(function(result){
+        return client.query(sql,indicador?[indicador]:[]).fetchAll().then(function(result){
             result.rows.forEach(function(row,i){
                 annios[row.annio]=i;
                 anniosA.push(row.annio);
@@ -471,15 +531,19 @@ class AppSIGBA extends backend.AppBackend{
             var cortantesPrincipalesArr=result.rows;
             return cortantesPrincipalesArr;
         }).then(function(cortantesPrincipalesArr){
-            return client.query(
-                "select valor_corte,denominacion,orden from cortes where variable=$1 order by orden",
-                [cortantesPrincipalesArr[0].variable_principal]
-            ).fetchAll().then(function(result){
-                var categoriasPrincipalArr=result.rows.map(function(categorias){
-                    return {valor:categorias.valor_corte,denominacion:categorias.denominacion}
+            if(cortantesPrincipalesArr.length){
+                return client.query(
+                    "select valor_corte,denominacion,orden from cortes where variable=$1 order by orden",
+                    [cortantesPrincipalesArr[0].variable_principal]
+                ).fetchAll().then(function(result){
+                    var categoriasPrincipalArr=result.rows.map(function(categorias){
+                        return {valor:categorias.valor_corte,denominacion:categorias.denominacion}
+                    });
+                    return {cortantesPrincipalesArr,categoriasPrincipalArr};
                 })
-                return {cortantesPrincipalesArr,categoriasPrincipalArr}
-            })
+            }else{
+                return false;
+            }
         });
     }
     defs_annio(annio){
@@ -503,8 +567,8 @@ class AppSIGBA extends backend.AppBackend{
         return (req && req.user && (req.user.usu_rol=='admin'|| req.user.usu_rol=='programador') && req.user.active==true);
     }
 
-    ownClientIncludes(){
-        return [
+    clientIncludes(req, hideBEPlusInclusions) {
+        var ownIncludes=[
             { type: 'js', module: 'graphicator', path:'graphicator'},
             { type: 'js', module: 'best-globals', path:'best-globals'},
             { type: 'js', module: 'require-bro'},
@@ -515,11 +579,8 @@ class AppSIGBA extends backend.AppBackend{
             { type: 'js', module: 'tabulator', path:'tabulator'},
             { type: 'css', module: 'c3' },
             { type: 'css', module: 'graphicator' }
-        ];
-    }
-
-    clientIncludes(req, hideBEPlusInclusions) {
-        return this.ownClientIncludes(req).concat(super.clientIncludes(req, hideBEPlusInclusions));
+        ]
+        return ownIncludes.concat(super.clientIncludes(req, hideBEPlusInclusions));
     }
 
     headSigba(esPrincipal,req,title){
@@ -531,14 +592,18 @@ class AppSIGBA extends backend.AppBackend{
         if(esAdmin){
             listaJS.push(html.script({src:'menu-3.js'}));
         }
-        var listaCSS = be.csss(hideBEPlusInclusions);
-        return html.head([
+        var listaHead=[
             html.meta({name:'viewport', content:'width=device-width'}),
             html.meta({name:'viewport', content:'initial-scale=1.0'}),
             html.title(title),
            // html.title(esPrincipal?'Tabulados':'Tabulado'),
             html.link({rel:"stylesheet", type:"text/css", href:"css/tabulados.css"}),
-        ].concat(listaJS).concat(listaCSS.map(function(css){
+        ];
+        if(this.config["client-setup"].css){
+            listaHead.push(html.link({rel:"stylesheet", type:"text/css", href:"css/"+this.config["client-setup"].css}))
+        }
+        var listaCSS = be.csss(hideBEPlusInclusions);
+        return html.head(listaHead.concat(listaJS).concat(listaCSS.map(function(css){
             return html.link({href: css, rel: "stylesheet"});
         })).concat(listaCSS.map(function(css){
             var skin=be.config['client-setup'].skin;
@@ -563,16 +628,17 @@ class AppSIGBA extends backend.AppBackend{
             "from indicadores_variables iv left join variables v on iv.variable=v.variable "+
             "where iv.indicador=$1 "+
             "and iv.variable in ("+arr_cortantes.map(function(cortante){return be.db.quoteLiteral(cortante)}).join(',')+")",
-            [indicador]).fetchOneRowIfExists().then(function(result){
-                var rowInfo=result.row;
-                tabulado.cant_iv=rowInfo.cant_iv;
-                var uso_seteo_iv=rowInfo.cant_iv==tabulado.cantidad_cortantes;
-                tabulado.uso_seteo_iv=uso_seteo_iv;
-                tabulado.denom_tab=uso_seteo_iv?rowInfo.denom_iv:rowInfo.denom_default;
-                tabulado.denom_graf=uso_seteo_iv?rowInfo.denom_iv:rowInfo.denom_default;
-                tabulado.var_tab=uso_seteo_iv?rowInfo.var_iv:rowInfo.var_default; 
-                tabulado.var_graf=uso_seteo_iv?rowInfo.var_iv:rowInfo.var_default; 
-                tabulado.ubi_tab=uso_seteo_iv?rowInfo.ubi_iv:'';
+            [indicador]
+        ).fetchOneRowIfExists().then(function(result){
+            var rowInfo=result.row;
+            tabulado.cant_iv=rowInfo.cant_iv;
+            var uso_seteo_iv=rowInfo.cant_iv==tabulado.cantidad_cortantes;
+            tabulado.uso_seteo_iv=uso_seteo_iv;
+            tabulado.denom_tab=uso_seteo_iv?rowInfo.denom_iv:rowInfo.denom_default;
+            tabulado.denom_graf=uso_seteo_iv?rowInfo.denom_iv:rowInfo.denom_default;
+            tabulado.var_tab=uso_seteo_iv?rowInfo.var_iv:rowInfo.var_default; 
+            tabulado.var_graf=uso_seteo_iv?rowInfo.var_iv:rowInfo.var_default; 
+            tabulado.ubi_tab=uso_seteo_iv?rowInfo.ubi_iv:'';
             return tabulado;
         }).then(function(tabulado){
             return client.query(
@@ -646,8 +712,63 @@ class AppSIGBA extends backend.AppBackend{
             })
         });
     }
-    
+    servirTabuladoEspecifico(req, res, funEntregarDatos){
+        var be=this;
+        var annio=req.query.annio;
+        var indicador=req.query.indicador;
+        return be.inDbClient(req, function(client){
+            var esAdmin=be.esAdminSigba(req);
+            var usuarioRevisor=false; // true si tiene permiso de revisor
+            var queryStr=
+                "select indicador,c.cor cortantes , count(*) as cantidad_cortantes,c.count,c.var arr_cortantes from ( "+
+                    "select indicador, cortantes cor,jsonb_object_keys(cortantes) cor_keys,count(*),ARRAY(select jsonb_object_keys(cortantes)) var  "+
+                    "from celdas where indicador=$1 group by indicador, cortantes "+
+                ") c group by indicador,cortantes, c.count,arr_cortantes order by cortantes"
+            return client.query(queryStr, [indicador]).fetchAll().then(function(result){
+                var tabuladosPorIndicador=result.rows
+                return Promise.all(tabuladosPorIndicador.map(function(tabulado){
+                    var arr_cortantes=tabulado.arr_cortantes
+                    return be.traerInfoTabulado(client,indicador, annio,tabulado);
+                })).then(function(){
+                    var cortantesPosibles = tabuladosPorIndicador.filter(row => (row.habilitado || esAdmin));
+                    if (cortantesPosibles.length > 1){
+                        cortantesPosibles = cortantesPosibles.filter(row => row.cortantes != '{"annio":true}');
+                    }
+                    //parametro GET (CSV con todos los cortantes que hay que mostrar, lo cual define un tabulado) //cortantes por defecto son las del primer tabulado
+                    var cortante = !req.query.cortante?JSON.stringify(cortantesPosibles[0].cortantes):req.query.cortante;
+                    // tabulado que se va as mostrar
+                    var fila = cortantesPosibles.filter(function(tabulado){
+                        return sameValues(tabulado.cortantes, JSON.parse(cortante)); 
+                    })[0];
+                    return be.armaMatrices(client, fila, annio, indicador).then(function(matrices){
+                        return funEntregarDatos(res, matrices, client, indicador, annio, fila, result, cortantesPosibles, cortante, esAdmin);
+                    });
+                });
+            }).catch(MiniTools.serveErr(req,res));
+        });
+    }
+    servirIndicadores(req, res, funEntregarDatos){
+        var be = this;
+        return be.inDbClient(req, function(client){
+            var queryStr=`
+                select d.dimension, i.indicador, i.denominacion , i.variable_principal, i.fte, i.um, i.universo, i.def_con, 
+                        i.def_ope, i.cob, i.desagregaciones, i.uso_alc_lim, i.decimales, i.con_nota_pie, i.ods, i.especial_principal, i.denominacion_principal,
+                        i.corte_principal, i.valor_principal, i.annios_ocultables, u.um, u.denominacion, u.descripcion, u.nota_pie, f.fte, f.denominacion, f.descripcion,
+                        f.graf_ult_annios,f.graf_cada_cinco, d.denominacion, d.agrupacion_principal, ap.denominacion,
+                        coalesce(tab.tabulados,array[]::text[]) as tabulados
+                    from indicadores i left join dimension d using (dimension) left join agrupacion_principal ap using(agrupacion_principal) 
+                        left join fte f using (fte) left join um u using (um) 
+                        left join (select indicador,  array_agg(t.cortantes::text) as tabulados from indicadores i left join tabulados t using(indicador) where t.invalido =false and t.habilitado=true group by indicador) tab on tab.indicador=i.indicador
+                    where i.ocultar is not false
+            `
+            return client.query(queryStr).fetchAll().then(function(result){
+                var listaInd=result.rows;
+                return funEntregarDatos(res,listaInd)
+            })
+        })
+    }
     addSchrödingerServices(mainApp, baseUrl){
+        var be = this;
         mainApp.use(baseUrl+'/',function(req, res, next) {
             if (req.path.substr(-1) == '/' && req.path.length > 1) {
                 var query = req.url.slice(req.path.length);
@@ -656,187 +777,247 @@ class AppSIGBA extends backend.AppBackend{
                 next();
             }
         });
-        var be = this;
         var urlYClasesTabulados='principal';
         super.addSchrödingerServices(mainApp, baseUrl);
-        mainApp.get(baseUrl+'/'+urlYClasesTabulados+'-indicador', function(req,res){
-            var client;
-            var annio=req.query.annio;
-            var indicador=req.query.indicador;
-            return be.getDbClient(req).then(function(cli){
-                var esAdmin=be.esAdminSigba(req);
-                var usuarioRevisor=false; // true si tiene permiso de revisor
-                client=cli;
-                var queryStr=
-                    "select indicador,c.cor cortantes , count(*) as cantidad_cortantes,c.count,c.var arr_cortantes from ( "+
-                        "select indicador, cortantes cor,jsonb_object_keys(cortantes) cor_keys,count(*),ARRAY(select jsonb_object_keys(cortantes)) var  "+
-                        "from celdas where indicador=$1 group by indicador, cortantes "+
-                    ") c group by indicador,cortantes, c.count,arr_cortantes order by cortantes"
-                return client.query(queryStr, [indicador]).fetchAll().then(function(result){
-                    var tabuladosPorIndicador=result.rows
-                    return Promise.all(tabuladosPorIndicador.map(function(tabulado){
-                        var arr_cortantes=tabulado.arr_cortantes
-                        return be.traerInfoTabulado(client,indicador, annio,tabulado);
-                    })).then(function(){
-                        var cortantesPosibles = tabuladosPorIndicador.filter(row => (row.habilitado || esAdmin));
-                        if (cortantesPosibles.length > 1){
-                            cortantesPosibles = cortantesPosibles.filter(row => row.cortantes != '{"annio":true}');
-                        }
-                        //parametro GET (CSV con todos los cortantes que hay que mostrar, lo cual define un tabulado) //cortantes por defecto son las del primer tabulado
-                        var cortante = !req.query.cortante?JSON.stringify(cortantesPosibles[0].cortantes):req.query.cortante;
-                        // tabulado que se va as mostrar
-                        var fila = cortantesPosibles.filter(function(tabulado){
-                            return JSON.stringify(tabulado.cortantes) == cortante; 
-                        })[0];
-                        return be.armaMatrices(client, fila, annio, indicador).then(function(matrices){
-                            return be.traeInfoMatrix(client,indicador).then(function(infoParaTabulado){
-                                var descripcionTabulado={};
-                                descripcionTabulado={
-                                    indicador:indicador,
-                                    camposCortantes:be.defs_annio(annio).cortantes,
-                                    cortantes: fila.cortantes,
-                                    annioCortante:annio?annio:'TRUE',
-                                    cuadro:fila.cuadro,
-                                    grafico:fila.grafico,
-                                    tipo_grafico:fila.tipo_grafico,
-                                    orientacion:fila.orientacion,
-                                    apilado:fila.apilado,
-                                    i_denom:infoParaTabulado.i_denom,
-                                    nota_pie:infoParaTabulado.con_nota?infoParaTabulado.nota_pie:null,
-                                    fuente:infoParaTabulado.f_denom,
-                                    um_denominacion:infoParaTabulado.u_denom,
-                                    um:infoParaTabulado.um,
-                                    decimales:infoParaTabulado.decimales,
-                                    fte:infoParaTabulado.fte,
-                                    graf_ult_annios:infoParaTabulado.graf_ult_annios,
-                                    graf_cada_cinco:infoParaTabulado.graf_cada_cinco,
-                                };
-                                matrices.matrixTab.caption=infoParaTabulado.i_denom;
-                                matrices.matrixGraf.caption=infoParaTabulado.i_denom;
-                                return {matrices,descripcionTabulado};
-                            }).then(function(matricesYDescripcion){
-                                var matrices=matricesYDescripcion.matrices;
-                                var descripcion=matricesYDescripcion.descripcionTabulado;
-                                tabulator.toCellTable=function(cell){
-                                    var cellValor=(cell && cell.valor)?cellValor=be.decimalesYComa(cell.valor,descripcion.decimales,','):(cell?cell.valor:cell)
-                                    return html.td({class:'tabulator-cell'},[
-                                        html.div({id:'valor-cv'},[
-                                            html.div({id:'valor-en-tabulado'},cell?be.puntosEnMiles(cellValor):'///'),
-                                            html.div({id:'cv-en-tabulado'},(cell && cell.cv)?cell.cv:null)
-                                        ])
-                                    ]);
-                                };
-                                var tabuladoHtml=tabulator.toHtmlTable(matrices.matrixTab)
-                                return {tabuladoHtml,descripcionTabulado:descripcion, matrix:matrices.matrixGraf};
+        mainApp.get(baseUrl+'/api_provisorio', function(req,res){
+            var version=req.query.version;
+            if(version!='0.1'){
+                res.send({ok:false, version, error:'version incorrecta de la API'});
+                res.end()
+            }
+            var es=spec;
+            var _=spec;
+            switch(req.query.traer){
+                case 'tabulado':
+                    be.servirTabuladoEspecifico(req,res, function funEntregarDatos(res, matrices){
+                        var result=
+                        es("el conjunto de datos correspondientes a un indicador",{
+                            ok:es("true ó false según el éxito del pedido"),
+                            version:es("el nombre de la versión de la API"),
+                            datos:es("la respuesta de la API a traer=tabulado",{
+                                vars:es.indexedObject("con las variables que cortan el tabulado",{
+                                    name:es("el nombre de la variable que se usa internamente"),
+                                    label:es("el nombre de la variable que debe mostrarse al usuario"),
+                                    values:es.indexedObject("con los valores posibles que puede contener la variable en el tabulado",{
+                                        label:es("la etiqueta del valor que debe ver el usuario")
+                                    })
+                                }),
+                                list:es.array("es el conjunto de datos que conforma el tabulado",
+                                    es.exclude("celda del tabulado, con las variables mencionadas en vars y el value",{cv:true})
+                                )
                             })
-                        }).then(function(tabuladoDescripcionMatriz){
-                            var tabuladoHtmlYDescripcion=result;
-                            var tabuladoHtml=tabuladoDescripcionMatriz.tabuladoHtml;
-                            var descripcion=tabuladoDescripcionMatriz.descripcionTabulado;
-                            var matrix=tabuladoDescripcionMatriz.matrix;
-                            var trCortantes=cortantesPosibles.map(function(cortanteAElegir){
-                                var denominaciones=cortanteAElegir.denom_tab.split('|');
-                                var href=''+absolutePath+''+urlYClasesTabulados+'-indicador?'+(annio?'annio='+annio+'&':'')+'indicador='+indicador+'&cortante='+JSON.stringify(cortanteAElegir.cortantes)
-                                return html.tr({class:'tr-cortante-posible','esta-habilitado':cortanteAElegir.habilitado?'si':'no'},[
-                                    html.td({class:'td-cortante-posible', 'menu-item-selected':JSON.stringify(cortanteAElegir.cortantes)==cortante},[
-                                        html.a({class:'a-cortante-posible',href:href},denominaciones.join('-'))
-                                    ])
-                                ]);
-                            });
-                            var annios={};
-                            var anniosA=[];
-                            var anniosLinks=[];
-                            descripcion.usuario=req.user?req.user.usu_usu:{};
-                            descripcion.habilitar=!fila.habilitado;
-                            descripcion.cortante_orig=fila.cortante_orig;
-                            var validationButton=html.button({id:'validacion-tabulado',type:'button','more-info':JSON.stringify(descripcion)},'Validar tabulado')
-                            var habilitationButton=html.button({id:'habilitacion-tabulado',type:'button','more-info':JSON.stringify(descripcion)}/*,bb*/);
-                            return be.anniosCortantes(client,annios,anniosA,indicador).then(function(){
-                                anniosLinks=anniosA.map(function(annioAElegir){
-                                    var href=''+absolutePath+''+urlYClasesTabulados+'-indicador?annio='+annioAElegir+'&indicador='+indicador+
-                                    '&cortante='+cortante;
-                                    return html.span([
-                                        html.a({class:'annio-cortante-posible',href:href,'menu-item-selected':annioAElegir==annio},annioAElegir),
-                                    ]);
-                                }).concat(
-                                    html.span([
-                                        html.a({class:'annio-cortante-posible',href:''+absolutePath+''+urlYClasesTabulados+'-indicador?indicador='+indicador+"&cortante="+cortante,'menu-item-selected':annio?false:true},'Serie')
-                                    ])
-                                );
-                            }).then(function(){
-                                var skin=be.config['client-setup'].skin;
-                                var skinUrl=(skin?skin+'/':'');
-                                return be.encabezado(skinUrl,false,req,client).then(function(encabezadoHtml){
-                                    var pantalla=html.div({id:'total-layout','menu-type':'hidden'},[
-                                        encabezadoHtml,
-                                        html.div({class:'annios-links-container',id:'annios-links'},[
-                                            html.div({id:'barra-annios'},anniosLinks),
-                                            html.div({id:'link-signos-convencionales'},[html.a({id:'signos_convencionales-link',href:''+absolutePath+'principal-signos_convencionales'},'Signos convencionales')]),
-                                            html.div({class:'float-clear'})
-                                        ]),
-                                        html.table({class:'tabla-links-tabulado-grafico'},[
-                                            html.tr({class:'tr-links-tabulado-grafico'},[
-                                                html.td({class:'td-links'},[
-                                                    html.div({class:'div-pantallas',id:'div-pantalla-izquierda'},[
-                                                        html.h2('Tabulados'),
-                                                        html.table({id:'tabla-izquierda'},trCortantes)
-                                                    ]),
-                                                ]),
-                                                html.td({class:'td-tabulado-grafico'},[
-                                                    html.div({class:'div-pantallas',id:'div-pantalla-derecha'},[
-                                                        html.h2({class:'tabulado-descripcion',id:'para-botones'},[
-                                                            html.div({class:'tabulado-descripcion-annio'},annio),
-                                                            html.div({class:'botones-tabulado-descripcion'})
-                                                        ]),
-                                                        ((fila.habilitado) || esAdmin)?html.div({
-                                                            id:'tabulado-html',
-                                                            class: tabuladoDescripcionMatriz.descripcionTabulado.tipo_grafico == 'piramide' ? 'hide-tabulado-cuadro': '',
-                                                            'para-graficador':JSON.stringify(matrix),
-                                                            'info-tabulado':JSON.stringify(descripcion)
-                                                        },[tabuladoHtml]):null,
-                                                        esAdmin?html.div([
-                                                            validationButton,
-                                                            habilitationButton
-                                                        ]):null,
-                                                        html.div({class:'tabulado-descripcion',id:'tabulado-descripcion-um'},[
-                                                            (fila.habilitado || esAdmin)?html.span({id:"tabulado-um"},"Unidad de medida: "):null,
-                                                            (fila.habilitado || esAdmin)?html.span({id:"tabulado-um-descripcion"},descripcion.um_denominacion):null
-                                                        ]),
-                                                        html.div({class:'tabulado-descripcion',id:'tabulado-descripcion-nota'},[
-                                                            ((fila.habilitado || esAdmin)&&descripcion.nota_pie)?html.span({id:"nota-porcentaje-label"},'Nota: '):null,
-                                                            ((fila.habilitado || esAdmin)&&descripcion.nota_pie)?html.span({id:"nota-porcentaje"},descripcion.nota_pie):null,
-                                                        ]),
-                                                        html.div({class:'tabulado-descripcion',id:'tabulado-descripcion-fuente'},[
-                                                            (fila.habilitado || esAdmin)?html.span({id:"tabulado-fuente"},'Fuente: '):null,
-                                                            (fila.habilitado || esAdmin)?html.span({id:"tabulado-fuente-descripcion"},descripcion.fuente):null,
-                                                        ]),
-                                                    ])
-                                                ])
-                                            ])
-                                        ])
-                                    ]);
-                                    var pagina=html.html([
-                                        be.headSigba(false,req,descripcion.i_denom),
-                                        html.body({"que-pantalla": 'indicador'},[pantalla,be.foot(skinUrl)])
-                                    ]);
-                                    res.send(pagina.toHtmlText({pretty:true}));
-                                    res.end();
-                                })
+                        })({ok:true, version, datos:matrices.datum});
+                        res.send(result);
+                        res.end()
+                    });
+                break;
+                case 'principal':
+                    be.servirIndicadores(req,res, function (res, indicadores){
+                        var result=
+                        es("la información general sobre cada uno de los indicadores del sistema de indicadores y sus posibles tabulados",{
+                            ok:es("true ó false según el éxito del pedido"),
+                            version:es("el nombre de la versión de la API"),
+                            datos:es("la respuesta de la API a traer=principal",{
+                                indicadores:es.array("cada uno de los indicadores",es({
+                                    "dimension":_,
+                                    "indicador":es("código interno del indicador dentro del sistema"),
+                                    "denominacion":es("denominación del indicador (nombre a desplegar al usuario)"),
+                                    "fte":es("la fuente"),
+                                    "um":es("la unidad de medida"),
+                                    "universo":es("el universo"),
+                                    "def_con":es("la definición conceptual"),
+                                    "def_ope":es("la definición operativa"),
+                                    "cob":es("la cobertura"),
+                                    "desagregaciones":es("la desagregación"),
+                                    "uso_alc_lim":es("el uso, el alcance y sus limitaciones"),
+                                    "ods":es("la indicación de si forma parte de los ODS"),
+                                    "tabulados":_ // es.array("la lista de los tabulados disponibles para el indicador",_)
+                                }))
                             })
                         })
+                        ({ok:true, version, datos:{indicadores}});
+                        res.send(result)
+                        res.end()
+                    })
+                    break;
+                default:
+                    res.send({ok:false, error:'valor del campo traer no válido'})
+                    res.end();
+                    break;
+            }       
+        });
+        mainApp.get(baseUrl+'/'+urlYClasesTabulados+'-indicador', function(req,res){
+            be.servirTabuladoEspecifico(req,res, function funEntregarDatos(res,matrices, client, indicador, annio, fila, result, cortantesPosibles, cortante, esAdmin){
+                var contieneAnnioOcultable=false;
+                return Promise.resolve().then(function(){
+                    return be.traeInfoMatrix(client,indicador).then(function(infoParaTabulado){
+                        var descripcionTabulado={};
+                        descripcionTabulado={
+                            indicador:indicador,
+                            camposCortantes:be.defs_annio(annio).cortantes,
+                            cortantes: fila.cortantes,
+                            annioCortante:annio?annio:'TRUE',
+                            cuadro:fila.cuadro,
+                            grafico:fila.grafico,
+                            tipo_grafico:fila.tipo_grafico,
+                            orientacion:fila.orientacion,
+                            apilado:fila.apilado,
+                            i_denom:infoParaTabulado.i_denom,
+                            nota_pie:infoParaTabulado.con_nota?infoParaTabulado.nota_pie:null,
+                            fuente:infoParaTabulado.f_denom,
+                            um_denominacion:infoParaTabulado.u_denom,
+                            um:infoParaTabulado.um,
+                            decimales:infoParaTabulado.decimales,
+                            fte:infoParaTabulado.fte,
+                            graf_ult_annios:infoParaTabulado.graf_ult_annios,
+                            graf_cada_cinco:infoParaTabulado.graf_cada_cinco,
+                            annios_ocultables:infoParaTabulado.annios_ocultables,
+                        };
+                        matrices.matrixTab.caption=infoParaTabulado.i_denom;
+                        matrices.matrixGraf.caption=infoParaTabulado.i_denom;
+                        return {matrices,descripcionTabulado};
+                    }).then(function(matricesYDescripcion){
+                        var matrices=matricesYDescripcion.matrices;
+                        var descripcion=matricesYDescripcion.descripcionTabulado;
+                        var toCellColumnHeaderPrevious = tabulator.toCellColumnHeader;
+                        function calcularAnniosOcultables(attrs, varValue){
+                            if(descripcion.annios_ocultables){
+                                if(varValue && varValue.annio){
+                                    if(varValue.annio<2010 && varValue.annio % 5 !=0){
+                                        attrs['annio-ocultable']='si';
+                                        contieneAnnioOcultable=true;
+                                    }
+                                }
+                            }
+                        }
+                        tabulator.toCellColumnHeader=function (titleCellAttrs, varName, labelValue, varValue){
+                            calcularAnniosOcultables(titleCellAttrs, {[varName]:varValue})
+                            var th = toCellColumnHeaderPrevious.apply(this, arguments);
+                            return th;
+                        }
+                        tabulator.toCellTable=function(cell, varValues){
+                            var attrs={class:'tabulator-cell'};
+                            calcularAnniosOcultables(attrs, varValues)
+                            var cellValor=(cell && cell.valor)?cellValor=be.decimalesYComa(cell.valor,descripcion.decimales,','):(cell?cell.valor:cell)
+                            return html.td(attrs,[
+                                html.div({id:'valor-cv'},[
+                                    html.div({id:'valor-en-tabulado'},cell?be.puntosEnMiles(cellValor):'///'),
+                                    html.div({id:'cv-en-tabulado'},(cell && cell.cv)?cell.cv:null)
+                                ])
+                            ]);
+                        };
+                        var tabuladoHtml=tabulator.toHtmlTable(matrices.matrixTab)
+                        return {tabuladoHtml,descripcionTabulado:descripcion, matrix:matrices.matrixGraf};
+                    })
+                }).then(function(tabuladoDescripcionMatriz){
+                    var tabuladoHtmlYDescripcion=result;
+                    var tabuladoHtml=tabuladoDescripcionMatriz.tabuladoHtml;
+                    var descripcion=tabuladoDescripcionMatriz.descripcionTabulado;
+                    var matrix=tabuladoDescripcionMatriz.matrix;
+                    var trCortantes=cortantesPosibles.map(function(cortanteAElegir){
+                        var denominaciones=cortanteAElegir.denom_tab.split('|');
+                        var href=''+absolutePath+''+urlYClasesTabulados+'-indicador?'+(annio?'annio='+annio+'&':'')+'indicador='+indicador+'&cortante='+JSON.stringify(cortanteAElegir.cortantes)
+                        return html.tr({class:'tr-cortante-posible','esta-habilitado':cortanteAElegir.habilitado?'si':'no'},[
+                            html.td({class:'td-cortante-posible', 'menu-item-selected':JSON.stringify(cortanteAElegir.cortantes)==cortante},[
+                                html.a({class:'a-cortante-posible',href:href},denominaciones.join('-'))
+                            ])
+                        ]);
                     });
+                    var annios={};
+                    var anniosA=[];
+                    var anniosLinks=[];
+                    descripcion.usuario=req.user?req.user.usu_usu:{};
+                    descripcion.habilitar=!fila.habilitado;
+                    descripcion.cortante_orig=fila.cortante_orig;
+                    var validationButton=html.button({id:'validacion-tabulado',type:'button','more-info':JSON.stringify(descripcion)},'Validar tabulado')
+                    var habilitationButton=html.button({id:'habilitacion-tabulado',type:'button','more-info':JSON.stringify(descripcion)}/*,bb*/);
+                    return be.anniosCortantes(client,annios,anniosA,indicador).then(function(){
+                        anniosLinks=anniosA.map(function(annioAElegir){
+                            var href=''+absolutePath+''+urlYClasesTabulados+'-indicador?annio='+annioAElegir+'&indicador='+indicador+
+                            '&cortante='+cortante;
+                            return html.span([
+                                html.a({class:'annio-cortante-posible',href:href,'menu-item-selected':annioAElegir==annio},annioAElegir),
+                            ]);
+                        }).concat(
+                            html.span([
+                                html.a({class:'annio-cortante-posible',href:''+absolutePath+''+urlYClasesTabulados+'-indicador?indicador='+indicador+"&cortante="+cortante,'menu-item-selected':annio?false:true},'Serie')
+                            ])
+                        );
+                    }).then(function(){
+                        var skin=be.config['client-setup'].skin;
+                        var skinUrl=(skin?skin+'/':'');
+                        return be.encabezado(skinUrl,false,req,client).then(function(encabezadoHtml){
+                            var pantalla=html.div({id:'total-layout','menu-type':'hidden'},[
+                                encabezadoHtml,
+                                html.div({class:'annios-links-container',id:'annios-links'},[
+                                    html.div({id:'barra-annios'},anniosLinks),
+                                    html.div({id:'link-signos-convencionales'},[html.a({id:'signos_convencionales-link',href:''+absolutePath+'principal-signos_convencionales'},'Signos convencionales')]),
+                                    html.div({class:'float-clear'})
+                                ]),
+                                html.table({class:'tabla-links-tabulado-grafico'},[
+                                    html.tr({class:'tr-links-tabulado-grafico'},[
+                                        html.td({class:'td-links'},[
+                                            html.div({class:'div-pantallas',id:'div-pantalla-izquierda'},[
+                                                html.h2('Tabulados'),
+                                                html.table({id:'tabla-izquierda'},trCortantes)
+                                            ]),
+                                        ]),
+                                        html.td({class:'td-tabulado-grafico'},[
+                                            html.div({class:'div-pantallas',id:'div-pantalla-derecha'},[
+                                                html.h2({class:'tabulado-descripcion',id:'para-botones'},[
+                                                    html.div({class:'tabulado-descripcion-annio'},annio),
+                                                    html.div({class:'botones-tabulado-descripcion'})
+                                                ]),
+                                                ((fila.habilitado) || esAdmin)?html.div({
+                                                    id:'tabulado-html',
+                                                    class: tabuladoDescripcionMatriz.descripcionTabulado.tipo_grafico == 'piramide' ? 'hide-tabulado-cuadro': '',
+                                                    'para-graficador':JSON.stringify(matrix),
+                                                    'info-tabulado':JSON.stringify(descripcion)
+                                                },[tabuladoHtml]):null,
+                                                esAdmin?html.div([
+                                                    validationButton,
+                                                    habilitationButton
+                                                ]):null,
+                                                html.div({class:'tabulado-descripcion',id:'tabulado-descripcion-um'},[
+                                                    (fila.habilitado || esAdmin)?html.span({id:"tabulado-um"},"Unidad de medida: "):null,
+                                                    (fila.habilitado || esAdmin)?html.span({id:"tabulado-um-descripcion"},descripcion.um_denominacion):null
+                                                ]),
+                                                html.div({class:'tabulado-descripcion',id:'tabulado-descripcion-nota'},[
+                                                    ((fila.habilitado || esAdmin)&&descripcion.nota_pie)?html.span({id:"nota-porcentaje-label"},'Nota: '):null,
+                                                    ((fila.habilitado || esAdmin)&&descripcion.nota_pie)?html.span({id:"nota-porcentaje"},descripcion.nota_pie):null,
+                                                ]),
+                                                html.div({class:'tabulado-descripcion',id:'tabulado-descripcion-fuente'},[
+                                                    (fila.habilitado || esAdmin)?html.span({id:"tabulado-fuente"},'Fuente: '):null,
+                                                    (fila.habilitado || esAdmin)?html.span({id:"tabulado-fuente-descripcion"},descripcion.fuente):null,
+                                                ]),
+                                                (contieneAnnioOcultable?
+                                                    html.div({class:'aclaracion-annios-ocultos'},[
+                                                        html.span({class:'nota'},"Nota: "),
+                                                        " se muestran los datos correspondientes a los años terminados en 0 y 5 y, con correlatividad anual, desde 2010 en adelante ",
+                                                        html.a({href:"#ver-todo"}, "(ver todos)")
+                                                    ])
+                                                :null)
+                                            ])
+                                        ])
+                                    ])
+                                ])
+                            ]);
+                            var pagina=html.html([
+                                be.headSigba(false,req,descripcion.i_denom),
+                                html.body({"que-pantalla": 'indicador'},[pantalla,be.foot(skinUrl)])
+                            ]);
+                            res.send(pagina.toHtmlText({pretty:true}));
+                            res.end();
+                        })
+                    })
                 });
-            }).catch(MiniTools.serveErr(req,res)).then(function(){
-                if(client){
-                    client.done();
-                }
-            });
+            })
         });
         mainApp.get(baseUrl+'/principal', function(req,res){
             var annios={};
             var client;
             var categoriasPrincipalLista;
-            var cortantePrincipal;
+            //var cortantePrincipal;
             var encabezado;
             var skin=be.config['client-setup'].skin;
             var skinUrl=(skin?skin+'/':'');
@@ -844,10 +1025,14 @@ class AppSIGBA extends backend.AppBackend{
             return be.getDbClient(req).then(function(cli){
                 client=cli;
                 return be.cortantesPrincipal(client).then(function(cortanteEnPrincipal){
-                    be.cortantesEnPrincipal=cortanteEnPrincipal;
-                    categoriasPrincipalLista=cortanteEnPrincipal.categoriasPrincipalArr;
-                    cortantePrincipal=cortanteEnPrincipal;
-                
+                    if(cortanteEnPrincipal){
+                        be.hayCortantePrincipal=true;
+                        be.cortantesEnPrincipal=cortanteEnPrincipal;
+                        categoriasPrincipalLista=cortanteEnPrincipal.categoriasPrincipalArr;
+                        //cortantePrincipal=cortanteEnPrincipal;
+                    }else{
+                        be.hayCortantePrincipal=false;
+                    }
                 }).then(function(){
                     return be.encabezado(skinUrl,true,req,client).then(function(encabezadoHtml){
                         encabezado=encabezadoHtml;
@@ -901,9 +1086,9 @@ class AppSIGBA extends backend.AppBackend{
                                         html.th('Año'),
                                         html.th('Total')
                                     ].concat(
-                                        categoriasPrincipalLista.map(function(categoria){
+                                        be.hayCortantePrincipal?categoriasPrincipalLista.map(function(categoria){
                                             return html.th(categoria.denominacion)
-                                        })
+                                        }):null
                                     ).concat([
                                         html.th({class:'th-vacio',}),
                                         html.th({class:'th-vacio',})
@@ -1014,31 +1199,32 @@ class AppSIGBA extends backend.AppBackend{
             var skinUrl=(skin?skin+'/':'');
             return be.getDbClient(req).then(function(cli){
                 var client=cli;
-                return client.query(`SELECT denominacion,leyes FROM agrupacion_principal WHERE agrupacion_principal=$1`,[agrupacion_principal]).fetchOneRowIfExists().then(function(result){
-                    var arregloLeyes=result.row.leyes.split('; ');
-                    var paginaLey=html.html([
-                        be.headSigba(false,req,'Leyes'),
-                        html.body({"que-pantalla": 'ley'},[
-                            html.div({id:'total-layout','menu-type':'hidden'},[
-                                be.encabezado(skinUrl,false,req,client),
-                                html.h2({id:'agrupacion_principal_'+agrupacion_principal},result.row.denominacion),
-                                html.div({id:'ley_agrupacion_principal_'+agrupacion_principal},
-                                    arregloLeyes.map(function(ley){
-                                        return html.div({class:'leyes'},ley);
-                                    })
-                                ),
-                                be.foot(skinUrl)
+                return be.encabezado(skinUrl,false,req,client).then(function(encabezado){
+                    return client.query(`SELECT denominacion,leyes FROM agrupacion_principal WHERE agrupacion_principal=$1`,[agrupacion_principal]).fetchOneRowIfExists().then(function(result){
+                        var arregloLeyes=result.row.leyes.split('; ');
+                        var paginaLey=html.html([
+                            be.headSigba(false,req,'Leyes'),
+                            html.body({"que-pantalla": 'ley'},[
+                                html.div({id:'total-layout','menu-type':'hidden'},[
+                                    encabezado,
+                                    html.h2({id:'agrupacion_principal_'+agrupacion_principal},result.row.denominacion),
+                                    html.div({id:'ley_agrupacion_principal_'+agrupacion_principal},
+                                        arregloLeyes.map(function(ley){
+                                            return html.div({class:'leyes'},ley);
+                                        })
+                                    ),
+                                    be.foot(skinUrl)
+                                ])
                             ])
-                        ])
-                    ]);
-                    res.send(paginaLey.toHtmlText({pretty:true}));
-                    res.end();
+                        ]);
+                        res.send(paginaLey.toHtmlText({pretty:true}));
+                        res.end();
+                    })
                 }).catch(MiniTools.serveErr(req,res)).then(function(){client.done()});
             })
         });
         mainApp.get(baseUrl+'/principal-signos_convencionales',function(req,res){
-            return be.getDbClient(req).then(function(cli){
-                var client=cli;
+            return be.inDbClient(req,function(client){
                 var skin=be.config['client-setup'].skin;
                 var skinUrl=(skin?skin+'/':'');
                 return client.query(`SELECT signo,denominacion,orden FROM signos_convencionales ORDER BY orden`).fetchAll().then(function(result){
@@ -1073,7 +1259,7 @@ class AppSIGBA extends backend.AppBackend{
                         res.send(pantalla.toHtmlText({pretty:true}));
                         res.end();
                     })
-                }).catch(MiniTools.serveErr(req,res)).then(function(){client.done()});
+                })
             })
         })
     }
@@ -1094,28 +1280,40 @@ class AppSIGBA extends backend.AppBackend{
     
     encabezado(skinUrl,esPrincipal,req,client){
         var be = this;
-        return be.obtenerGruposPrincipales(client).then(function(grupos){
-            return html.div({id:'id-encabezado'},[
-                html.a({class:'encabezado',id:'barra-superior',href:''+absolutePath+'principal'},[
-                    html.div({class:'encabezado-interno'},[
-                        html.img({class:'encabezado',id:'bs-izq',src:skinUrl+'img/logo-ciudad.png'}),
-                        html.img({class:'encabezado',id:'bs-der',src:skinUrl+'img/logo-BA.png'})
+        return be.parametrosSistema(client).then(function(parametros){
+            var srcLogoSistema='img/img-logo.png';
+            if(parametros && parametros.nombre_sistema){
+                srcLogoSistema='img/img-logo'+'-'+parametros.nombre_sistema+'.png'
+            }
+            return be.obtenerGruposPrincipales(client).then(function(grupos){
+                if(parametros.texto_sistema){
+                    var textoLey=html.div({id:'texto'},parametros.texto_sistema)
+                }
+                var encabezadoCompletoHtml=html.div({id:'id-encabezado'},[
+                    html.a({class:'encabezado',id:'barra-superior',href:''+absolutePath+'principal'},[
+                        html.div({class:'encabezado-interno'},[
+                            html.img({class:'encabezado',id:'bs-izq',src:skinUrl+'img/logo-ciudad.png'}),
+                            html.img({class:'encabezado',id:'bs-der',src:skinUrl+'img/logo-BA.png'})
+                        ]),
                     ]),
-                ]),
-                html.div({class:'encabezado',id:'barra-inferior'},
-                    [].concat([
-                        html.a({class:'a-principal',href:''+absolutePath+'principal'},[html.img({class:'encabezado',id:'img-logo',src:skinUrl+'img/img-logo.png'})])
-                    ]).concat(be.config['client-setup'].logos.map(function(logoName){
-                            return html.a({class:'a-principal',href:''+absolutePath+'principal'},[html.img({class:'encabezado',id:'logo-'+logoName,src:skinUrl+'img/img-logo-'+logoName+'.png'})]);
-                    }).concat([be.config['client-setup'].conTextoPrincipal?html.div({class:'encabezado',id:'texto-encabezado-grande'}):null]).concat(
-                        esPrincipal?html.div({class:'contiene-grupos'},grupos.map(function(grupo){
-                            var href=''+absolutePath+'principal#'+grupo.codigo;
-                            var src=skinUrl+'img/'+grupo.codigo+'.png';
-                            return html.a({class:'grupo-a',href:href,title:grupo.denominacion},[html.img({class:'grupo-img',src:src})])
-                        })):null
-                    ))
-                )
-            ]);
+                    html.div({class:'encabezado',id:'barra-inferior'},
+                        [].concat([
+                            html.a({class:'a-principal',href:''+absolutePath+'principal'},[html.img(
+                                {class:'encabezado',id:'img-logo',src:skinUrl+srcLogoSistema}
+                            )])
+                        ]).concat(be.config['client-setup'].logos.map(function(logoName){
+                                return html.a({class:'a-principal',href:''+absolutePath+'principal'},[html.img({class:'encabezado',id:'logo-'+logoName,src:skinUrl+'img/img-logo-'+logoName+'.png'})]);
+                        }).concat([be.config['client-setup'].conTextoPrincipal?html.div({class:'encabezado',id:'texto-encabezado-grande'}):null]).concat(
+                            esPrincipal?textoLey?textoLey:html.div({class:'contiene-grupos'},grupos.map(function(grupo){
+                                var href=''+absolutePath+'principal#'+grupo.codigo;
+                                var src=skinUrl+'img/'+grupo.codigo+'.png';
+                                return html.a({class:'grupo-a',href:href,title:grupo.denominacion},[html.img({class:'grupo-img',src:src})])
+                            })):null
+                        ))
+                    )
+                ])
+                return encabezadoCompletoHtml;
+            })
         })
     }
     foot(skinUrl){
@@ -1131,43 +1329,41 @@ class AppSIGBA extends backend.AppBackend{
     getMenu(context){
         var be = this;
         return {menu:[
-            {menuType:'menu', name:'Indicadores', menuContent:[
-                {menuType:'table', name:'agrupacion_principal', label:be.config['client-setup'].labels['agrupacion-principal'], },
-                {menuType:'table', name:'dimension'       , label:'Dimensión'                             },
-                {menuType:'table', name:'indicadores'     , label:'Indicadores'                           },
-                {menuType:'table', name:'tabulados'       , label:'Tabulados'                           },
-                {menuType:'table', name:'fte'             , label:'Fuente de datos '                      },
-                {menuType:'table', name:'um'              , label:'Unidad de medida'                      },
-                {menuType:'table', name:'cv'              , label:'Coeficientes de variación'             },
-                {menuType:'table', name:'indicador_annio' , label:'Cobertura'                             },
-                {menuType:'proc' , name:'alta/tabulados'  , label:'Dar de alta nuevos tabulados'                             },
-            ]},
-            {menuType:'menu'    , name:'Variables de corte' , menuContent:[
-                {menuType:'table', name:'variables'       , label:'Variables'            },
-                {menuType:'table', name:'cortes'          , label:'Cortes'                                },
-            ]},
-            {menuType:'menu'    , name:'Ubicación Variables'   , menuContent:[
-                {menuType:'table'    , name:'Indicadores-Variables'   , table:'indicadores_variables'},
-                {menuType:'table'    , name:'Tabulados-Variables'     , table:'tabulados_variables'},
-            ]},
-            
-            {menuType:'menu'     , name:'Valores'                 , menuContent:[
-                {menuType:'proc', label:'Borrar datos valores', name:'borrar/valores'},
-                {menuType:'table'    , name:'Valores'                 , table:'valores'              },
-            ]},
-            // {menuType:'table'    , name:'Celdas'                  , table:'celdas'               },
-            // {menuType:'table'    , name:'Cortes-Celdas'           , table:'cortes_celdas'        },
-            {menuType:'path'     , name:'Tabulados'               , path:'/principal'            },
-            {menuType:'menu'     , name:'Totales'                 , menuContent:[
-                {menuType:'calculaTotales' , name:'Calcular totales'},
-                {menuType:'table'          , name:'Discrepancias'         , table:'diferencia_totales'},
-            ]},
-            {menuType:'menu'     , name:'configuración'                 , menuContent:[
-                {menuType:'table'    , name:'signos_convencionales', label:'signos convencionales'},
-                {menuType:'table'    , name:'variables_principales', label:'Variables Principales del sistema'},
-                //{menuType:'table'    , name:'parametros'           , label:'Parámetros del home'},
-                {menuType:'table'    , name:'usuarios'},
-            ]},
+            //{menuType:'menu', name:'configuracion',  menuContent:[
+                {menuType:'menu', name:'particiones'              , label:'división temática' , menuContent:[
+                    {menuType:'table', name:'agrupacion_principal', label:be.config['client-setup'].labels['agrupacion-principal'], },
+                    {menuType:'table', name:'dimension'   },
+                    {menuType:'table', name:'indicadores' },
+                ]},
+                {menuType:'menu', name:'atributos', label:'atributos de indicadores', menuContent:[
+                    {menuType:'table', name:'fte'             , label:'fuente de datos '                          },
+                    {menuType:'table', name:'um'              , label:'unidad de medida'                          },
+                    {menuType:'table', name:'cv'              , label:'coeficientes de variación'                 },
+                    {menuType:'table', name:'indicador_annio' , label:'cobertura'                                 },
+                    {menuType:'table'    , name:'signos_convencionales', label:'signos convencionales'            },
+                    {menuType:'table'    , name:'variables_principales', label:'variables principales del sistema'},
+                ]},
+                {menuType:'menu'    , name:'variables' , menuContent:[
+                    {menuType:'table', name:'variables'                                              },
+                    {menuType:'table', name:'cortes'                                                 },
+                    {menuType:'table', name:'indicadores-variables'   , table:'indicadores_variables'},
+                    {menuType:'proc' , name:'generar'                 , label:'generar-variables' , proc:'variables/generar'},
+                    {menuType:'table', name:'tabulados-variables'     , table:'tabulados_variables'  },
+                ]},
+                {menuType:'menu', name:'tabulados', menuContent:[
+                   {menuType:'table', name:'tabulados'                                               },
+                   {menuType:'proc' , name:'alta/tabulados'  , label:'generar tabulados'             },
+                ]},
+                {menuType:'menu'     , name:'valores'        , label:'datos'           , menuContent:[
+                    {menuType:'table'    , name:'valores'                 , table:'valores'},
+                    {menuType:'proc', label:'borrar datos valores', name:'borrar/valores'  },
+                    {menuType:'calculaTotales' , name:'calcular totales'},
+                    {menuType:'table'          , name:'discrepancias'         , table:'diferencia_totales'},
+                ]},
+                {menuType:'path'     , name:'principal'  , path:'/principal' },
+                {menuType:'menu'     , name:'sistema'    , menuContent:[
+                    {menuType:'table'    , name:'usuarios'}
+                ]},
         ]}
     }
     getTables(){
@@ -1191,9 +1387,50 @@ class AppSIGBA extends backend.AppBackend{
             'cortes_celdas',
             'tabulados_variables',
             'diferencia_totales',
-            'signos_convencionales'
+            'signos_convencionales',
+            'totales_calculados'
         ]);
     }
+    releerEstructuraBaseDeDatos(client){
+        var be = this;
+        return client.query(
+            `SELECT *
+            FROM variables v LEFT JOIN (
+                SELECT column_name 
+                FROM information_schema.columns WHERE table_name ='valores' 
+                    AND column_name NOT IN ('valor','cortantes','cortes','es_automatico','fecha_validacion','indicador','origen_validacion','usu_validacion')
+                ) x ON v.variable = x.column_name`
+        ).fetchAll().then(function(result){
+            be.variablesDinamicas=result.rows.map(function(row){
+                return {
+                    name:row.variable,
+                    isSlicer:row.corte,
+                    label:row.denominacion, 
+                    typeName:'text',
+                    clientSide:!row.column_name?'nuevaFaltaGenerar':(
+                        row.estado_tabla_valores=='quitar'?'quitarFaltaGenerar':null
+                    ),
+                    serverSide:row.column_name && row.estado_tabla_valores=='quitar'?true:null
+                };
+            });
+            return true;
+        })
+    }
+    postConfig(){
+        super.postConfig();
+        var be=this;
+        var be = this;
+        return be.inDbClient({},function(client){
+           return be.releerEstructuraBaseDeDatos(client);
+        }).then(function(){
+            return be.inDbClient({},function(client){
+                return client.query(`SELECT valor_esp from celdas;`).execute();
+            })
+        }).catch(function(err){
+            console.log("*********************  AGREGAR LA COLUMN valor_esp en tablas valor y celdas********************")
+        })
+    }
+    
 }
 
 process.on('uncaughtException', function(err){

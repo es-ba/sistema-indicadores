@@ -111,11 +111,13 @@ body
   transition .3s ease-in-out
   
 .img-ley-agrupacion_principal
+  display: none
   width 18px
   padding 3px
   margin-bottom -5px
   
-.img-ley-agrupacion_principal:hover  
+.img-ley-agrupacion_principal:hover
+  display: none
   cursor pointer
   -webkit-transform scale(1.2)
   transform scale(1.2)
@@ -489,6 +491,21 @@ h2
 #tabulado-fuente, #tabulado-um, #nota-porcentaje-label
   font-weight bold
   max-width 700px
+  
+.aclaracion-annios-ocultos
+  color #686868
+  font-size 80%  
+  font-weight bold
+  padding-bottom 10px
+
+.aclaracion-annios-ocultos a 
+  color #ed9000
+  
+.aclaracion-annios-ocultos a:hover
+  color #19ae92
+  
+.aclaracion-annios-ocultos a visited, a active
+  color #ed9000  
     
 .tabla-links-tabulado-grafico 
   width 100%
@@ -640,7 +657,7 @@ h2
   line-height 17px
   float left
   position relative
-  overflow-y hidden
+  overflow-y scroll
   padding-right 16px
   background-image url('../confort/img/continua.png')
   background-position right bottom
@@ -1197,3 +1214,20 @@ h2
 
 .hide-tabulado-cuadro
   visibility collapse
+
+body[ver-todo="si"]
+  .aclaracion-annios-ocultos 
+    display none
+  [annio-ocultable="si"]
+    color #999
+    display table-cell
+
+[annio-ocultable="si"]
+  display none
+  
+.campo_denominacion[nuevo-registro="nuevo"]
+  background-color #eee
+  background-image url('../img/sigba_nuevo.png')
+  background-position top right
+  background-repeat no-repeat
+  

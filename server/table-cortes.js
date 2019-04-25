@@ -16,7 +16,7 @@ module.exports = function(context){
         ],
         primaryKey:['variable', 'valor_corte'],
         foreignKeys:[
-            {references:'variables', fields:['variable']},
+            {references:'variables', fields:['variable'], onDelete:'cascade'},
         ],
         constraints:[
             {constraintType:'check' , consName:"valor invalido en signo_piramide", expr:"signo_piramide in (1, -1)"}
